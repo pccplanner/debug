@@ -29,6 +29,14 @@
             flex: 1;
             padding: 10px;
             gap: 10px;
+            overflow: hidden;
+        }
+
+        .header-section {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #0d1117;
         }
 
         .editor-wrapper {
@@ -158,13 +166,12 @@
     </style>
 </head>
 <body>
-    <h1>Script Manager Tool</h1>
     <div class="container">
-        <div class="search-bar">
-            <input type="text" id="search" placeholder="Search (supports regex)" oninput="searchInScript()">
-        </div>
-
-        <div class="editor-wrapper">
+        <div class="header-section">
+            <h1>Script Manager Tool</h1>
+            <div class="search-bar">
+                <input type="text" id="search" placeholder="Search (supports regex)" oninput="searchInScript()">
+            </div>
             <div class="toolbar">
                 <label for="file-input-original">Load Original</label>
                 <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
@@ -177,7 +184,9 @@
                 <button onclick="saveProject()">Save</button>
                 <button onclick="undo()">Undo</button>
             </div>
+        </div>
 
+        <div class="editor-wrapper">
             <div class="code-container" id="original-container">
                 <div class="line-numbers" id="original-lines"></div>
                 <div class="code-content">
@@ -220,14 +229,13 @@
             const textarea = document.getElementById(id);
             const linesDiv = document.getElementById(id + '-lines');
             const lines = textarea.value.split("\n");
-            const totalLines = lines.length || 1; // Ensure at least 1 line
+            const totalLines = lines.length || 1;
             let lineNumbers = '';
             for (let i = 1; i <= totalLines; i++) {
                 lineNumbers += i + '\n';
             }
             linesDiv.innerHTML = lineNumbers;
 
-            // Sync scrolling
             const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
             linesDiv.scrollTop = scrollPercentage * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
         }
@@ -297,21 +305,31 @@
                 }
             }
 
-            document.getElementById("original").innerHTML = originalResult;
-            document.getElementById("patch").innerHTML = patchResult;
+            // Update textareas with plain text, not HTML
+            document.getElementById("original").value = originalResult.replace(/<[^>]+>/g, '');
+            document.getElementById("patch").value = patchResult.replace(/<[^>]+>/g, '');
             navigateToChanges();
             saveToHistory();
         }
 
         function navigateToChanges() {
-            const firstChange = document.querySelector('.highlight, .removed');
-            if (firstChange) firstChange.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const original = document.getElementById("original");
+            const patch = document.getElementById("patch");
+            const searchTerm = document.getElementById("search").value || ".";
+            try {
+                const regex = new RegExp(searchTerm, "gi");
+                original.scrollTo(0, original.value.search(regex));
+                patch.scrollTo(0, patch.value.search(regex));
+            } catch (e) {
+                console.log("Invalid regex");
+            }
         }
 
         function applyPatch() {
-            const original = document.getElementById("original").value;
             const patch = document.getElementById("patch").value;
-            document.getElementById("original").value = patch || original;
+            if (patch) {
+                document.getElementById("original").value = patch;
+            }
             updateLineNumbers("original");
             saveToHistory();
         }
@@ -321,7 +339,9 @@
             const patch = document.getElementById("patch").value.split("\n");
             const merged = original.map((line, i) => patch[i] || line).join("\n");
             document.getElementById("original").value = merged;
+            document.getElementById("patch").value = ""; // Clear patch panel after merge
             updateLineNumbers("original");
+            updateLineNumbers("patch");
             saveToHistory();
         }
 
