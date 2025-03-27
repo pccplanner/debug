@@ -49,11 +49,11 @@
         }
 
         #original-container {
-            flex: 1; /* Initial proportion */
+            flex: 1;
         }
 
         #patch-container {
-            flex: 1; /* Initial proportion */
+            flex: 1;
         }
 
         .splitter {
@@ -79,8 +79,9 @@
             color: #8b949e;
             line-height: 21px;
             border-right: 1px solid #30363d;
-            overflow-y: auto;
+            overflow: hidden;
             -webkit-overflow-scrolling: touch;
+            user-select: none;
         }
 
         .code-content {
@@ -110,6 +111,9 @@
             padding: 5px;
             background: #161b22;
             border-bottom: 1px solid #30363d;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
         }
 
         .toolbar input[type="file"] {
@@ -124,6 +128,7 @@
             border-radius: 4px;
             font-size: 12px;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .toolbar label:hover, .toolbar button:hover {
@@ -148,30 +153,6 @@
             font-size: 12px;
         }
 
-        .buttons {
-            display: flex;
-            gap: 5px;
-            padding: 5px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        button {
-            padding: 5px 10px;
-            cursor: pointer;
-            background: #238636;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background: #2ea44f;
-        }
-
         .highlight { background: rgba(255, 255, 0, 0.2); }
         .removed { background: rgba(255, 0, 0, 0.2); text-decoration: line-through; }
     </style>
@@ -189,6 +170,12 @@
                 <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
                 <label for="file-input-patch">Load Patch</label>
                 <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
+                <button onclick="compareScripts()">Compare</button>
+                <button onclick="applyPatch()">Apply Patch</button>
+                <button onclick="mergeScripts()">Merge</button>
+                <button onclick="clearContent()">Clear</button>
+                <button onclick="saveProject()">Save</button>
+                <button onclick="undo()">Undo</button>
             </div>
 
             <div class="code-container" id="original-container">
@@ -206,15 +193,6 @@
                     <textarea id="patch" placeholder="Patch script..." oninput="updateLineNumbers('patch'); autoSuggest()"></textarea>
                 </div>
             </div>
-        </div>
-
-        <div class="buttons">
-            <button onclick="compareScripts()">Compare</button>
-            <button onclick="applyPatch()">Apply Patch</button>
-            <button onclick="mergeScripts()">Merge</button>
-            <button onclick="clearContent()">Clear</button>
-            <button onclick="saveProject()">Save</button>
-            <button onclick="undo()">Undo</button>
         </div>
     </div>
 
@@ -241,9 +219,17 @@
         function updateLineNumbers(id) {
             const textarea = document.getElementById(id);
             const linesDiv = document.getElementById(id + '-lines');
-            const totalLines = textarea.value.split("\n").length;
-            linesDiv.innerHTML = Array.from({ length: totalLines }, (_, i) => i + 1).join("\n");
-            linesDiv.scrollTop = textarea.scrollTop;
+            const lines = textarea.value.split("\n");
+            const totalLines = lines.length || 1; // Ensure at least 1 line
+            let lineNumbers = '';
+            for (let i = 1; i <= totalLines; i++) {
+                lineNumbers += i + '\n';
+            }
+            linesDiv.innerHTML = lineNumbers;
+
+            // Sync scrolling
+            const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
+            linesDiv.scrollTop = scrollPercentage * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
         }
 
         function saveToHistory() {
@@ -411,9 +397,11 @@
             }
             document.querySelectorAll("textarea").forEach(ta => {
                 ta.addEventListener("scroll", () => updateLineNumbers(ta.id));
+                ta.addEventListener("input", () => updateLineNumbers(ta.id));
             });
+            updateLineNumbers("original");
+            updateLineNumbers("patch");
         };
     </script>
 </body>
-
 </html>
