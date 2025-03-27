@@ -312,13 +312,8 @@
         }
 
         function compareScripts() {
-            // Simply ensure each panel retains its own content
-            const original = document.getElementById("original").value;
-            const patch = document.getElementById("patch").value;
-
-            document.getElementById("original").value = original;
-            document.getElementById("patch").value = patch;
-
+            // Do not modify the content of the panels
+            // Simply trigger a visual comparison if needed (e.g., scroll to differences)
             navigateToChanges();
             saveToHistory();
         }
@@ -392,7 +387,6 @@
             startHeightTop = topPanel.offsetHeight;
             startHeightBottom = bottomPanel.offsetHeight;
 
-            // Add event listeners for dragging
             window.addEventListener('mousemove', resizePanels);
             window.addEventListener('mouseup', stopResize);
             window.addEventListener('touchmove', resizePanels, { passive: false });
@@ -432,8 +426,8 @@
             const saved = localStorage.getItem('scriptProject');
             if (saved) {
                 const { original, patch } = JSON.parse(saved);
-                document.getElementById("original").value = original;
-                document.getElementById("patch").value = patch;
+                document.getElementById("original").value = original || "";
+                document.getElementById("patch").value = patch || "";
                 updateLineNumbers("original");
                 updateLineNumbers("patch");
             }
