@@ -2,217 +2,704 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Script Manager with Preview</title>
-  <!-- Include diff_match_patch if you want advanced word-level diffs -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+  <title>Script Manager Tool with Preview</title>
+  <!-- Optionally load diff_match_patch for advanced word-level diffs:
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
-    /* Basic layout and styling from your V6.1 code (truncated for brevity) */
+    /* ================== GLOBAL STYLES (from V6.1) ================== */
     body {
-      margin: 0; padding: 0;
-      background: #0d1117; color: #c9d1d9;
+      margin: 0;
+      padding: 0;
+      background: #0d1117;
+      color: #c9d1d9;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      display: flex; flex-direction: column;
-      height: 100vh; overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
     }
-    .header-section { /* ... */ }
-    .toolbar { /* ... */ }
-    .editor-wrapper { /* ... */ }
-    .code-container { /* ... */ }
-    .line-numbers { /* ... */ }
-    .code-content { /* ... */ }
-    textarea { /* ... */ }
-    .splitter { /* ... */ }
-    /* Diff View and Change List (hidden by default) */
-    #diff-view, #change-list {
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin: 10px 0;
+    }
+    .header-section {
       position: fixed;
-      top: 80px; /* or whatever fits your header */
-      z-index: 300;
-      display: none;
-      overflow-y: auto;
+      top: 0; left: 0; right: 0;
+      background: #0d1117;
+      z-index: 10;
+      padding: 10px;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
+    #menu-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: inherit;
+      cursor: pointer;
+    }
+    .search-bar {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: center;
+      padding: 5px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      margin-top: 5px;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 5px;
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .toolbar {
+      position: absolute;
+      top: 60px;
+      right: 10px;
+      display: none;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 5px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      z-index: 999;
+    }
+    .toolbar label,
+    .toolbar button {
+      padding: 5px 10px;
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .toolbar label:hover,
+    .toolbar button:hover {
+      background: #2ea44f;
+    }
+    .toolbar input[type="file"] {
+      display: none;
+    }
+    .editor-wrapper {
+      flex: 1;
+      margin-top: 120px; /* space for header */
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .code-container {
+      display: flex;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      position: relative;
+      max-height: 100%;
+      overflow: hidden;
+    }
+    #original-container,
+    #patch-container {
+      flex: 1 1 50%;
+      min-height: 100px;
+      max-height: 100%;
+      overflow-y: auto;
+      position: relative;
+    }
+    .panel-toolbar {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      z-index: 2;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .copy-btn {
+      background: transparent;
+      border: none;
+      font-size: 14px;
+      color: #c9d1d9;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      gap: 4px;
+    }
+    .copy-btn:hover {
+      color: #ffffff;
+    }
+    .line-numbers {
+      width: 40px;
+      background: #161b22;
+      padding: 10px 5px;
+      text-align: right;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 11px;
+      color: #6e7681;
+      line-height: 21px;
+      border-right: 1px solid #30363d;
+      position: sticky;
+      left: 0;
+      top: 0;
+      z-index: 1;
+      user-select: none;
+      white-space: pre;
+      overflow: hidden;
+    }
+    .code-content {
+      flex: 1;
+      position: relative;
+      margin-left: 40px; /* same as .line-numbers width */
+    }
+    textarea {
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+      line-height: 21px;
+      background: #21262d;
+      color: #c9d1d9;
+      border: none;
+      box-sizing: border-box;
+      resize: none;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .splitter {
+      height: 5px;
+      background: #30363d;
+      cursor: ns-resize;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .splitter-handle {
+      width: 40px;
+      height: 5px;
+      background: #8b949e;
+      border-radius: 3px;
+    }
+    .splitter:hover .splitter-handle {
+      background: #c9d1d9;
+    }
+
+    /* ======== NEW: DIFF VIEW & CHANGE LIST FOR PREVIEW MERGE/PATCH ======== */
     #diff-view {
-      right: 0; width: 40%; border-left: 2px solid #30363d; background: #0d1117; padding: 10px;
+      position: fixed;
+      top: 80px; /* below header */
+      right: 0;
+      width: 40%;
+      height: calc(100% - 80px);
+      background: #0d1117;
+      border-left: 2px solid #30363d;
+      overflow-y: auto;
+      padding: 10px;
+      display: none;
+      z-index: 300;
     }
     #change-list {
-      left: 0; width: 15%; border-right: 2px solid #30363d; background: #161b22; padding: 10px;
+      position: fixed;
+      top: 80px;
+      left: 0;
+      width: 15%;
+      height: calc(100% - 80px);
+      background: #161b22;
+      overflow-y: auto;
+      padding: 10px;
+      display: none;
+      z-index: 300;
     }
-    .diff-line.added { background: rgba(39,174,96,0.2); }
-    .diff-line.removed { background: rgba(248,81,73,0.2); }
-    .change-item { cursor: pointer; margin: 5px 0; background: #21262d; }
-    .change-item:hover { background: #2ea44f; }
+    .diff-line {
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 2px 4px;
+    }
+    .diff-line.added {
+      background: rgba(39,174,96,0.2);
+    }
+    .diff-line.removed {
+      background: rgba(248,81,73,0.2);
+    }
+    .change-item {
+      margin: 5px 0;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    .change-item:hover {
+      background: #2ea44f;
+    }
   </style>
 </head>
 <body>
-
-<div class="header-section">
-  <h1>Script Manager Tool</h1>
-  <!-- Hidden toolbar, search bar, etc. from your V6.1 code here... -->
-  <button onclick="previewMerge()">Preview Merge</button>
-  <button onclick="previewPatch()">Preview Patch</button>
-</div>
-
-<div class="editor-wrapper">
-  <!-- Original Panel -->
-  <div class="code-container" id="original-container">
-    <div class="line-numbers" id="original-lines"></div>
-    <div class="code-content">
-      <textarea id="original"></textarea>
+  <!-- ===== HEADER ===== -->
+  <div class="header-section">
+    <h1>Script Manager Tool</h1>
+    <div class="search-bar">
+      <input
+        type="text"
+        id="search"
+        placeholder="Search (supports regex)"
+        oninput="searchInScript()"
+      />
+    </div>
+    <!-- “…” toggles toolbar -->
+    <button id="menu-btn">⋮</button>
+    <div class="toolbar">
+      <label for="file-input-original">Load Original</label>
+      <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
+      <label for="file-input-patch">Load Patch</label>
+      <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
+      <button onclick="compareScripts()">Compare</button>
+      <button onclick="applyPatch()">Apply Patch</button>
+      <button onclick="mergeScripts()">Merge</button>
+      <button onclick="clearContent()">Clear</button>
+      <button onclick="saveProject()">Save</button>
+      <button onclick="undo()">Undo</button>
+      <!-- New “Preview Merge” / “Preview Patch” buttons -->
+      <button onclick="previewMerge()">Preview Merge</button>
+      <button onclick="previewPatch()">Preview Patch</button>
     </div>
   </div>
-  <!-- Splitter -->
-  <div class="splitter"></div>
-  <!-- Patch Panel -->
-  <div class="code-container" id="patch-container">
-    <div class="line-numbers" id="patch-lines"></div>
-    <div class="code-content">
-      <textarea id="patch"></textarea>
+
+  <!-- ===== MAIN EDITOR AREA ===== -->
+  <div class="editor-wrapper">
+    <!-- Original Panel -->
+    <div class="code-container" id="original-container">
+      <div class="panel-toolbar">
+        <button class="copy-btn" onclick="copyPanel(this)">
+          <!-- Inline SVG icon for “copy” (two squares) -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+               viewBox="0 0 16 16">
+            <path d="M13 1H4a1 1 0 0 0-1 1v2h1V2h8v8h-1v1h2a1
+                     1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+            <path d="M9 5H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1
+                     1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
+          </svg>
+          <span>Copy</span>
+        </button>
+      </div>
+      <div class="line-numbers" id="original-lines"></div>
+      <div class="code-content">
+        <textarea
+          id="original"
+          placeholder="Original script..."
+          oninput="updateLineNumbers('original')"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Splitter (vertical) -->
+    <div class="splitter">
+      <div class="splitter-handle"></div>
+    </div>
+
+    <!-- Patch Panel -->
+    <div class="code-container" id="patch-container">
+      <div class="panel-toolbar">
+        <button class="copy-btn" onclick="copyPanel(this)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+               viewBox="0 0 16 16">
+            <path d="M13 1H4a1 1 0 0 0-1 1v2h1V2h8v8h-1v1h2a1
+                     1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+            <path d="M9 5H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1
+                     1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
+          </svg>
+          <span>Copy</span>
+        </button>
+      </div>
+      <div class="line-numbers" id="patch-lines"></div>
+      <div class="code-content">
+        <textarea
+          id="patch"
+          placeholder="Patch script..."
+          oninput="updateLineNumbers('patch')"
+        ></textarea>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Diff View & Change List -->
-<div id="diff-view"></div>
-<div id="change-list"></div>
+  <!-- ====== DIFF VIEW + CHANGE LIST (for preview) ====== -->
+  <div id="diff-view"></div>
+  <div id="change-list"></div>
 
-<script>
-/* ===================== BASIC LINE-NUMBER & SPLITTER LOGIC (like V6.1) ===================== */
-function updateLineNumbers(id) {
-  const ta = document.getElementById(id);
-  const linesDiv = document.getElementById(id + "-lines");
-  const lines = ta.value.split("\n");
-  linesDiv.textContent = lines.map((_, i) => i + 1).join("\n");
-}
-function initSplitter() { /* same as your V6.1 code... */ }
-/* etc. onload, scroll sync, etc. truncated for brevity */
+  <script>
+    /* ===== Show/hide the toolbar when “…” is clicked ===== */
+    document.getElementById("menu-btn").onclick = () => {
+      const tb = document.querySelector(".toolbar");
+      tb.style.display = tb.style.display === "flex" ? "none" : "flex";
+    };
 
-/* ===================== DIFF + CHANGE LIST (line-based or diff_match_patch) ===================== */
-// For simplicity, let's do a line-based diff. If you want word-level diffs, use diff_match_patch:
-function lineDiff(orig, patch) {
-  const origLines = orig.split("\n");
-  const patchLines = patch.split("\n");
-  let diff = [];
-  let i = 0, j = 0;
-  while (i < origLines.length && j < patchLines.length) {
-    if (origLines[i] === patchLines[j]) {
-      diff.push({ text: origLines[i], line: i+1, equal: true });
-      i++; j++;
-    } else {
-      diff.push({ text: origLines[i], line: i+1, removed: true });
-      diff.push({ text: patchLines[j], line: i+1, added: true });
-      i++; j++;
+    /* ===== Copy the content of a panel's textarea ===== */
+    function copyPanel(btn) {
+      const txt = btn.closest(".code-container").querySelector("textarea").value;
+      navigator.clipboard.writeText(txt);
     }
-  }
-  while (i < origLines.length) {
-    diff.push({ text: origLines[i], line: i+1, removed: true });
-    i++;
-  }
-  while (j < patchLines.length) {
-    diff.push({ text: patchLines[j], line: origLines.length + j + 1, added: true });
-    j++;
-  }
-  return diff;
-}
 
-// Show the diff in #diff-view and #change-list, and scroll Original to first difference
-function showDiffAndScroll(origText, patchText) {
-  const diff = lineDiff(origText, patchText);
-  const diffView = document.getElementById("diff-view");
-  const changeList = document.getElementById("change-list");
-  diffView.innerHTML = "";
-  changeList.innerHTML = "";
+    /* ===== Variables for splitter & undo history ===== */
+    let history = [];
+    let isResizing = false;
+    let startY, startHeightTop, startHeightBottom;
+    let splitter = null;
 
-  let firstDiffLine = null;
-  diff.forEach((d, idx) => {
-    const lineDiv = document.createElement("div");
-    lineDiv.className = "diff-line";
-    if (d.added) {
-      lineDiv.classList.add("added");
-      lineDiv.textContent = "+ " + d.text;
-    } else if (d.removed) {
-      lineDiv.classList.add("removed");
-      lineDiv.textContent = "- " + d.text;
-    } else {
-      lineDiv.textContent = "  " + d.text;
+    /* ===== Load file content into “original” or “patch” ===== */
+    function loadFileContent(panel) {
+      const input = document.getElementById(`file-input-${panel}`);
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById(panel).value = e.target.result;
+        updateLineNumbers(panel);
+        saveToHistory();
+      };
+      reader.readAsText(file);
     }
-    diffView.appendChild(lineDiv);
 
-    if (d.added || d.removed) {
-      if (firstDiffLine === null) {
-        firstDiffLine = d.line;
+    /* ===== Generate line numbers + sync scroll for a given panel ===== */
+    function updateLineNumbers(id) {
+      const textarea = document.getElementById(id);
+      const linesDiv = document.getElementById(id + "-lines");
+      const lines = textarea.value.split("\n");
+      let lineNums = "";
+      for (let i = 1; i <= lines.length; i++) {
+        lineNums += i + "\n";
       }
-      const item = document.createElement("div");
-      item.className = "change-item";
-      item.textContent = `Line ${d.line}: ${d.added ? "Added" : "Removed"}`;
-      item.onclick = () => scrollOriginalToLine(d.line);
-      changeList.appendChild(item);
+      linesDiv.textContent = lineNums;
+      // Adjust line-numbers div height to match textarea scrollHeight
+      linesDiv.style.height = `${textarea.scrollHeight}px`;
+      // Scroll line-numbers in sync with the textarea
+      const scrollRatio =
+        textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
+      linesDiv.scrollTop =
+        scrollRatio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
     }
-  });
 
-  // Show the overlays
-  diffView.style.display = "block";
-  changeList.style.display = "block";
-
-  // Scroll original to the first difference, if any
-  if (firstDiffLine) {
-    scrollOriginalToLine(firstDiffLine);
-  }
-}
-
-function scrollOriginalToLine(lineNum) {
-  const ta = document.getElementById("original");
-  // Each line ~21px in your code. Adjust as needed:
-  ta.scrollTo({
-    top: (lineNum - 1) * 21,
-    behavior: "smooth"
-  });
-}
-
-/* ===================== PREVIEW MERGE/PATCH, THEN CONFIRM ===================== */
-function previewMerge() {
-  const origText = document.getElementById("original").value;
-  const patchText = document.getElementById("patch").value;
-  // 1) Show diffs and navigate to first difference
-  showDiffAndScroll(origText, patchText);
-  // 2) Ask user if they want to proceed with the actual merge
-  setTimeout(() => {
-    if (confirm("Merge these changes into the Original script?")) {
-      doMerge(); // call your actual merge function
+    /* ===== Keep a small history of states for Undo ===== */
+    function saveToHistory() {
+      history.push({
+        original: document.getElementById("original").value,
+        patch: document.getElementById("patch").value,
+      });
+      if (history.length > 20) history.shift();
     }
-  }, 300);
-}
-
-function previewPatch() {
-  const origText = document.getElementById("original").value;
-  const patchText = document.getElementById("patch").value;
-  // 1) Show diffs and navigate
-  showDiffAndScroll(origText, patchText);
-  // 2) Ask user if they want to proceed with the patch
-  setTimeout(() => {
-    if (confirm("Replace the Original with this Patch?")) {
-      doPatch(); // call your actual patch function
+    function undo() {
+      if (history.length > 1) {
+        history.pop();
+        const prev = history[history.length - 1];
+        document.getElementById("original").value = prev.original || "";
+        document.getElementById("patch").value = prev.patch || "";
+        updateLineNumbers("original");
+        updateLineNumbers("patch");
+      }
     }
-  }, 300);
-}
 
-function doMerge() {
-  // This is your existing mergeScripts function
-  const origLines = document.getElementById("original").value.split("\n");
-  const patchLines = document.getElementById("patch").value.split("\n");
-  const merged = origLines.map((line, i) => patchLines[i] || line).join("\n");
-  document.getElementById("original").value = merged;
-  document.getElementById("patch").value = "";
-  // update lines, save history, etc...
-  alert("Merge completed!");
-}
+    /* ===== Searching for text/regex in both textareas ===== */
+    function searchInScript() {
+      const searchTerm = document.getElementById("search").value;
+      const original = document.getElementById("original");
+      const patch = document.getElementById("patch");
+      try {
+        const regex = new RegExp(searchTerm, "gi");
+        original.scrollTo(0, original.value.search(regex));
+        patch.scrollTo(0, patch.value.search(regex));
+      } catch (e) {
+        console.log("Invalid regex");
+      }
+    }
+    /* ===== Compare scripts (basic) ===== */
+    function compareScripts() {
+      navigateToChanges();
+      saveToHistory();
+    }
+    function navigateToChanges() {
+      const searchTerm = document.getElementById("search").value || ".";
+      try {
+        const regex = new RegExp(searchTerm, "gi");
+        const original = document.getElementById("original");
+        const patch = document.getElementById("patch");
+        original.scrollTo(0, original.value.search(regex));
+        patch.scrollTo(0, patch.value.search(regex));
+      } catch (e) {
+        console.log("Invalid regex");
+      }
+    }
 
-function doPatch() {
-  // This is your existing applyPatch function
-  const patchText = document.getElementById("patch").value;
-  document.getElementById("original").value = patchText;
-  document.getElementById("patch").value = "";
-  // update lines, save history, etc...
-  alert("Patch applied!");
-}
-</script>
+    /* ===== Patch / Merge Functions ===== */
+    function applyPatch() {
+      const patchText = document.getElementById("patch").value;
+      if (patchText) {
+        document.getElementById("original").value = patchText;
+        document.getElementById("patch").value = "";
+      }
+      updateLineNumbers("original");
+      updateLineNumbers("patch");
+      saveToHistory();
+      alert("Patch applied: Original script updated with Patch content.");
+    }
+    function mergeScripts() {
+      const origLines = document.getElementById("original").value.split("\n");
+      const patchLines = document.getElementById("patch").value.split("\n");
+      const merged = origLines.map((line, i) => patchLines[i] || line).join("\n");
+      document.getElementById("original").value = merged;
+      document.getElementById("patch").value = "";
+      updateLineNumbers("original");
+      updateLineNumbers("patch");
+      saveToHistory();
+      alert("Merge completed: Original script merged with Patch.");
+    }
+    function clearContent() {
+      document.getElementById("original").value = "";
+      document.getElementById("patch").value = "";
+      updateLineNumbers("original");
+      updateLineNumbers("patch");
+      saveToHistory();
+    }
+    function saveProject() {
+      const data = {
+        original: document.getElementById("original").value,
+        patch: document.getElementById("patch").value,
+      };
+      localStorage.setItem("scriptProject", JSON.stringify(data));
+      alert("Project Saved!");
+    }
+
+    /* ===== SPLITTER LOGIC (vertical resizing) ===== */
+    function initSplitter() {
+      splitter = document.querySelector(".splitter");
+      splitter.addEventListener("mousedown", startResize);
+      splitter.addEventListener("touchstart", startResize, { passive: false });
+    }
+    function startResize(e) {
+      e.preventDefault();
+      isResizing = true;
+      startY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+      const topPanel = document.getElementById("original-container");
+      const bottomPanel = document.getElementById("patch-container");
+      startHeightTop = topPanel.offsetHeight;
+      startHeightBottom = bottomPanel.offsetHeight;
+      window.addEventListener("mousemove", resizePanels);
+      window.addEventListener("mouseup", stopResize);
+      window.addEventListener("touchmove", resizePanels, { passive: false });
+      window.addEventListener("touchend", stopResize);
+    }
+    function resizePanels(e) {
+      if (!isResizing) return;
+      e.preventDefault();
+      const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+      const deltaY = clientY - startY;
+      const topPanel = document.getElementById("original-container");
+      const bottomPanel = document.getElementById("patch-container");
+      const totalHeight = topPanel.offsetHeight + bottomPanel.offsetHeight;
+      let newTopHeight = Math.max(100, Math.min(startHeightTop + deltaY, totalHeight - 100));
+      let newBottomHeight = totalHeight - newTopHeight;
+      topPanel.style.flex = `0 0 ${newTopHeight}px`;
+      bottomPanel.style.flex = `0 0 ${newBottomHeight}px`;
+    }
+    function stopResize(e) {
+      e.preventDefault();
+      isResizing = false;
+      window.removeEventListener("mousemove", resizePanels);
+      window.removeEventListener("mouseup", stopResize);
+      window.removeEventListener("touchmove", resizePanels);
+      window.removeEventListener("touchend", stopResize);
+    }
+
+    /* ===== PASTE-FRIENDLY FIX: On some iOS devices, “input” might not fire after paste ===== */
+    function handlePaste(id) {
+      setTimeout(() => {
+        updateLineNumbers(id);
+      }, 50);
+    }
+
+    /* ===== ON LOAD: restore localStorage, init line #, init splitter ===== */
+    window.onload = function () {
+      // Restore from localStorage if available
+      const saved = localStorage.getItem("scriptProject");
+      if (saved) {
+        const { original, patch } = JSON.parse(saved);
+        document.getElementById("original").value = original || "";
+        document.getElementById("patch").value = patch || "";
+      }
+
+      // For both textareas, watch for input/scroll/paste
+      ["original", "patch"].forEach((id) => {
+        const ta = document.getElementById(id);
+        ta.addEventListener("input", () => updateLineNumbers(id));
+        ta.addEventListener("scroll", () => {
+          const linesDiv = document.getElementById(id + "-lines");
+          const ratio = ta.scrollTop / (ta.scrollHeight - ta.clientHeight || 1);
+          linesDiv.scrollTop = ratio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
+        });
+        ta.addEventListener("paste", () => handlePaste(id));
+        updateLineNumbers(id);
+      });
+
+      initSplitter();
+    };
+
+    window.onbeforeunload = function() {
+      // Auto-save on unload
+      saveProject();
+    };
+
+    /* ====== NEW: PREVIEW MERGE/PATCH LOGIC (line-based diff) ====== */
+    function lineDiff(orig, patch) {
+      const origLines = orig.split("\n");
+      const patchLines = patch.split("\n");
+      let diff = [];
+      let i = 0, j = 0;
+      while (i < origLines.length && j < patchLines.length) {
+        if (origLines[i] === patchLines[j]) {
+          diff.push({ text: origLines[i], line: i+1, equal: true });
+          i++; j++;
+        } else {
+          diff.push({ text: origLines[i], line: i+1, removed: true });
+          diff.push({ text: patchLines[j], line: i+1, added: true });
+          i++; j++;
+        }
+      }
+      while (i < origLines.length) {
+        diff.push({ text: origLines[i], line: i+1, removed: true });
+        i++;
+      }
+      while (j < patchLines.length) {
+        diff.push({ text: patchLines[j], line: origLines.length + j + 1, added: true });
+        j++;
+      }
+      return diff;
+    }
+
+    function showDiffAndScroll(origText, patchText) {
+      const diff = lineDiff(origText, patchText);
+      const diffView = document.getElementById("diff-view");
+      const changeList = document.getElementById("change-list");
+      diffView.innerHTML = "";
+      changeList.innerHTML = "";
+
+      let firstDiffLine = null;
+      diff.forEach((d) => {
+        // Add line to diff view
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "diff-line";
+        if (d.added) {
+          lineDiv.classList.add("added");
+          lineDiv.textContent = "+ " + d.text;
+        } else if (d.removed) {
+          lineDiv.classList.add("removed");
+          lineDiv.textContent = "- " + d.text;
+        } else {
+          lineDiv.textContent = "  " + d.text;
+        }
+        diffView.appendChild(lineDiv);
+
+        // Add item to change list if changed
+        if (d.added || d.removed) {
+          if (firstDiffLine === null) firstDiffLine = d.line;
+          const item = document.createElement("div");
+          item.className = "change-item";
+          item.textContent = `Line ${d.line}: ${d.added ? "Added" : "Removed"}`;
+          item.onclick = () => scrollOriginalToLine(d.line);
+          changeList.appendChild(item);
+        }
+      });
+
+      // Show overlays
+      diffView.style.display = "block";
+      changeList.style.display = "block";
+
+      // Scroll Original to first difference
+      if (firstDiffLine) scrollOriginalToLine(firstDiffLine);
+    }
+
+    function scrollOriginalToLine(lineNum) {
+      const ta = document.getElementById("original");
+      // ~21px per line
+      ta.scrollTo({
+        top: (lineNum - 1) * 21,
+        behavior: "smooth"
+      });
+    }
+
+    function hideDiffView() {
+      document.getElementById("diff-view").style.display = "none";
+      document.getElementById("change-list").style.display = "none";
+    }
+
+    // Actual preview logic
+    function previewMerge() {
+      const origText = document.getElementById("original").value;
+      const patchText = document.getElementById("patch").value;
+      if (!patchText) {
+        alert("No patch content to merge!");
+        return;
+      }
+      // 1) Show diffs, scroll to first difference
+      showDiffAndScroll(origText, patchText);
+      // 2) Ask user if they want to proceed
+      setTimeout(() => {
+        if (confirm("Merge these changes into Original?")) {
+          doMerge(); // call the real merge
+          hideDiffView();
+        }
+      }, 300);
+    }
+    function doMerge() {
+      const origLines = document.getElementById("original").value.split("\n");
+      const patchLines = document.getElementById("patch").value.split("\n");
+      const merged = origLines.map((line, i) => patchLines[i] || line).join("\n");
+      document.getElementById("original").value = merged;
+      document.getElementById("patch").value = "";
+      updateLineNumbers("original");
+      updateLineNumbers("patch");
+      saveToHistory();
+      alert("Merge completed (after preview)!");
+    }
+
+    function previewPatch() {
+      const origText = document.getElementById("original").value;
+      const patchText = document.getElementById("patch").value;
+      if (!patchText) {
+        alert("No patch content to apply!");
+        return;
+      }
+      // 1) Show diffs
+      showDiffAndScroll(origText, patchText);
+      // 2) Ask user to confirm
+      setTimeout(() => {
+        if (confirm("Replace Original with Patch?")) {
+          doPatch();
+          hideDiffView();
+        }
+      }, 300);
+    }
+    function doPatch() {
+      const patchText = document.getElementById("patch").value;
+      document.getElementById("original").value = patchText;
+      document.getElementById("patch").value = "";
+      updateLineNumbers("original");
+      updateLineNumbers("patch");
+      saveToHistory();
+      alert("Patch applied (after preview)!");
+    }
+  </script>
 </body>
 </html>
