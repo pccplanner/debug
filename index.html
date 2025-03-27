@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Script Manager Tool</title>
   <style>
-    /* ========== GLOBAL STYLES ========== */
+    /* ===== GLOBAL ===== */
     body {
       margin: 0;
       padding: 0;
       background: #0d1117;
       color: #c9d1d9;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      height: 100vh;
       display: flex;
       flex-direction: column;
+      height: 100vh;
       overflow: hidden;
     }
     h1 {
@@ -23,9 +23,9 @@
       margin: 10px 0;
     }
 
-    /* ========== HEADER SECTION ========== */
+    /* ===== HEADER ===== */
     .header-section {
-      position: relative; /* So we can position .toolbar absolutely within */
+      position: relative;
       background: #0d1117;
       z-index: 10;
       padding: 10px;
@@ -45,10 +45,10 @@
       cursor: pointer;
     }
 
-    /* ========== SEARCH BAR ========== */
+    /* ===== SEARCH BAR ===== */
     .search-bar {
       width: 100%;
-      max-width: 600px; /* optional max width */
+      max-width: 600px; /* optional max-width */
       display: flex;
       justify-content: center;
       padding: 5px;
@@ -67,12 +67,12 @@
       font-size: 12px;
     }
 
-    /* ========== TOOLBAR (HIDDEN UNTIL “…” CLICKED) ========== */
+    /* ===== TOOLBAR (hidden behind “…”) ===== */
     .toolbar {
-      position: absolute; /* so it can appear on top of the search bar */
-      top: 60px; /* just below the title or on top of the search bar */
+      position: absolute;
+      top: 60px; /* just below the title, on top of search bar if open */
       right: 10px;
-      display: none; /* toggled by JS */
+      display: none;
       flex-wrap: wrap;
       gap: 5px;
       padding: 5px;
@@ -99,24 +99,31 @@
       display: none;
     }
 
-    /* ========== EDITOR WRAPPER ========== */
+    /* ===== EDITOR WRAPPER ===== */
     .editor-wrapper {
       flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      /* We add some top margin so content doesn’t overlap header */
       margin-top: 10px;
     }
 
-    /* ========== CODE PANELS ========== */
+    /* ===== CODE CONTAINERS + SCROLL AREA ===== */
     .code-container {
       display: flex;
-      background: #21262d;
+      flex-direction: column;
+      flex: 1;
       border: 1px solid #30363d;
       border-radius: 6px;
+      background: #21262d;
       position: relative;
       overflow: hidden;
+    }
+    /* Each code container has a .scroll-area that scrolls both line numbers & text together */
+    .scroll-area {
+      flex: 1;
+      display: flex; /* line numbers on left, textarea on right */
+      overflow-y: auto; /* single scroll for both */
     }
     .panel-toolbar {
       position: absolute;
@@ -135,41 +142,40 @@
       color: #c9d1d9;
     }
 
-    /* ========== LINE NUMBERS ========== */
+    /* ===== LINE NUMBERS ===== */
     .line-numbers {
-      width: 24px;
-      padding-right: 6px;
-      background: transparent;
+      flex: 0 0 auto;
+      width: 40px;
+      background: #161b22;
       text-align: right;
+      color: #6e7681;
       font-family: "SFMono-Regular", Consolas, monospace;
       font-size: 11px;
-      color: #6e7681;
       line-height: 21px;
-      position: sticky;
-      left: 0;
-      top: 0;
+      padding: 10px 5px 10px 0;
       user-select: none;
-      /* no border so it matches your style */
+      white-space: pre; /* preserve line breaks */
     }
-    .code-content {
-      flex: 1;
-      margin-left: 24px; /* matches .line-numbers width */
+
+    /* ===== TEXTAREA ===== */
+    .code-text {
+      flex: 1; /* fill remaining width */
+      min-width: 0; /* so it can shrink properly */
     }
     textarea {
       width: 100%;
       height: 100%;
       padding: 10px;
-      font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 14px;
-      line-height: 21px;
       background: #21262d;
       color: #c9d1d9;
       border: none;
       resize: none;
-      overflow-y: auto;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+      line-height: 21px;
     }
 
-    /* ========== SPLITTER ========== */
+    /* ===== SPLITTER ===== */
     .splitter {
       height: 5px;
       background: #30363d;
@@ -193,7 +199,7 @@
   <div class="header-section">
     <h1>Script Manager Tool</h1>
 
-    <!-- Search bar always visible -->
+    <!-- Search Bar Always Visible -->
     <div class="search-bar">
       <input
         type="text"
@@ -203,10 +209,10 @@
       />
     </div>
 
-    <!-- “...” button toggles the toolbar -->
+    <!-- “…” button toggles the toolbar -->
     <button id="menu-btn">⋮</button>
 
-    <!-- Toolbar initially hidden, displayed on top of search bar when toggled -->
+    <!-- Toolbar, hidden by default -->
     <div class="toolbar">
       <label for="file-input-original">Load Original</label>
       <input
@@ -231,66 +237,67 @@
     </div>
   </div>
 
-  <!-- Main editor area -->
   <div class="editor-wrapper">
-    <!-- Original Panel -->
+    <!-- ORIGINAL PANEL -->
     <div class="code-container" id="original-container">
       <div class="panel-toolbar">
         <button class="copy-btn" onclick="copyPanel(this)">📋</button>
       </div>
-      <div class="line-numbers" id="original-lines"></div>
-      <div class="code-content">
-        <textarea
-          id="original"
-          placeholder="Original script..."
-          oninput="updateLineNumbers('original')"
-        ></textarea>
+      <div class="scroll-area">
+        <div class="line-numbers" id="original-lines"></div>
+        <div class="code-text">
+          <textarea
+            id="original"
+            placeholder="Original script..."
+            oninput="updateLineNumbers('original')"
+          ></textarea>
+        </div>
       </div>
     </div>
 
-    <!-- Splitter -->
+    <!-- SPLITTER -->
     <div class="splitter">
       <div class="splitter-handle"></div>
     </div>
 
-    <!-- Patch Panel -->
+    <!-- PATCH PANEL -->
     <div class="code-container" id="patch-container">
       <div class="panel-toolbar">
         <button class="copy-btn" onclick="copyPanel(this)">📋</button>
       </div>
-      <div class="line-numbers" id="patch-lines"></div>
-      <div class="code-content">
-        <textarea
-          id="patch"
-          placeholder="Patch script..."
-          oninput="updateLineNumbers('patch')"
-        ></textarea>
+      <div class="scroll-area">
+        <div class="line-numbers" id="patch-lines"></div>
+        <div class="code-text">
+          <textarea
+            id="patch"
+            placeholder="Patch script..."
+            oninput="updateLineNumbers('patch')"
+          ></textarea>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    /* Toggle the toolbar display on “...” button click */
+    // Show/hide toolbar when “…” is clicked
     document.getElementById("menu-btn").onclick = () => {
       const tb = document.querySelector(".toolbar");
       tb.style.display = tb.style.display === "flex" ? "none" : "flex";
     };
 
-    /* Copy panel text to clipboard */
+    // Copy text from the panel's textarea
     function copyPanel(btn) {
-      const txt = btn.closest(".code-container").querySelector("textarea").value;
-      navigator.clipboard.writeText(txt);
+      const text = btn.closest(".code-container").querySelector("textarea").value;
+      navigator.clipboard.writeText(text);
     }
 
-    /* History and splitter variables */
+    // Track user edits for Undo
     let history = [];
+    // Variables for the splitter
     let isResizing = false;
-    let startY;
-    let startHeightTop;
-    let startHeightBottom;
-    let splitter = null;
+    let startY, startHeightTop, startHeightBottom, splitter = null;
 
-    /* Load text file into Original or Patch panel */
+    // Load file content into Original or Patch
     function loadFileContent(panel) {
       const input = document.getElementById(`file-input-${panel}`);
       const file = input.files[0];
@@ -304,39 +311,29 @@
       reader.readAsText(file);
     }
 
-    /* Update line numbers for the given panel (id = "original" or "patch") */
+    // Generate line numbers based on the textarea's line count
     function updateLineNumbers(id) {
       const textarea = document.getElementById(id);
       const linesDiv = document.getElementById(id + "-lines");
       const lines = textarea.value.split("\n");
-      const totalLines = lines.length || 1;
       let lineNumbers = "";
-      for (let i = 1; i <= totalLines; i++) {
+      for (let i = 1; i <= lines.length; i++) {
         lineNumbers += i + "\n";
       }
-      linesDiv.innerHTML = lineNumbers;
-
-      // Match the line-numbers div height to the textarea content height
-      linesDiv.style.height = `${textarea.scrollHeight}px`;
-
-      // Scroll line-numbers in sync with textarea
-      const scrollPercentage =
-        textarea.scrollTop /
-        ((textarea.scrollHeight - textarea.clientHeight) || 1);
-      linesDiv.scrollTop =
-        scrollPercentage * ((linesDiv.scrollHeight - linesDiv.clientHeight) || 1);
+      linesDiv.textContent = lineNumbers;
     }
 
-    /* Save current state to history for undo */
+    // Save the current state for undo
     function saveToHistory() {
       history.push({
         original: document.getElementById("original").value,
         patch: document.getElementById("patch").value,
       });
+      // Keep history short
       if (history.length > 20) history.shift();
     }
 
-    /* Undo the last change */
+    // Undo the last change
     function undo() {
       if (history.length > 1) {
         history.pop();
@@ -348,14 +345,14 @@
       }
     }
 
-    /* Search for text/regex in both textareas */
+    // Search for text/regex in both textareas
     function searchInScript() {
       const searchTerm = document.getElementById("search").value;
       const original = document.getElementById("original");
       const patch = document.getElementById("patch");
       try {
         const regex = new RegExp(searchTerm, "gi");
-        // Scroll to first match in each panel
+        // Jump to first match
         original.scrollTo(0, original.value.search(regex));
         patch.scrollTo(0, patch.value.search(regex));
       } catch (e) {
@@ -363,13 +360,12 @@
       }
     }
 
-    /* Compare scripts (simply calls navigateToChanges + saves to history) */
+    // Compare scripts
     function compareScripts() {
       navigateToChanges();
       saveToHistory();
     }
-
-    /* Scroll both textareas to the next found match */
+    // Navigate to next change
     function navigateToChanges() {
       const original = document.getElementById("original");
       const patch = document.getElementById("patch");
@@ -383,7 +379,7 @@
       }
     }
 
-    /* Apply patch: copy patch text into original, clear patch */
+    // Apply patch: copy patch text into original, clear patch
     function applyPatch() {
       const patchText = document.getElementById("patch").value;
       if (patchText) {
@@ -395,15 +391,11 @@
       saveToHistory();
     }
 
-    /* Merge patch lines into original lines (line-by-line) */
+    // Merge scripts line by line
     function mergeScripts() {
-      const originalLines = document
-        .getElementById("original")
-        .value.split("\n");
+      const origLines = document.getElementById("original").value.split("\n");
       const patchLines = document.getElementById("patch").value.split("\n");
-      const merged = originalLines
-        .map((line, i) => patchLines[i] || line)
-        .join("\n");
+      const merged = origLines.map((line, i) => patchLines[i] || line).join("\n");
       document.getElementById("original").value = merged;
       document.getElementById("patch").value = "";
       updateLineNumbers("original");
@@ -411,7 +403,7 @@
       saveToHistory();
     }
 
-    /* Clear both textareas */
+    // Clear both textareas
     function clearContent() {
       document.getElementById("original").value = "";
       document.getElementById("patch").value = "";
@@ -420,7 +412,7 @@
       saveToHistory();
     }
 
-    /* Save project to localStorage */
+    // Save to localStorage
     function saveProject() {
       const data = {
         original: document.getElementById("original").value,
@@ -430,13 +422,12 @@
       alert("Project Saved!");
     }
 
-    /* ===== SPLITTER LOGIC (VERTICAL SPLIT) ===== */
+    // ===== SPLITTER LOGIC =====
     function initSplitter() {
       splitter = document.querySelector(".splitter");
       splitter.addEventListener("mousedown", startResize);
       splitter.addEventListener("touchstart", startResize, { passive: false });
     }
-
     function startResize(event) {
       event.preventDefault();
       isResizing = true;
@@ -450,7 +441,6 @@
       window.addEventListener("touchmove", resizePanels, { passive: false });
       window.addEventListener("touchend", stopResize);
     }
-
     function resizePanels(event) {
       if (!isResizing) return;
       event.preventDefault();
@@ -463,10 +453,7 @@
       let newBottomHeight = totalHeight - newTopHeight;
       topPanel.style.flex = `0 0 ${newTopHeight}px`;
       bottomPanel.style.flex = `0 0 ${newBottomHeight}px`;
-      updateLineNumbers("original");
-      updateLineNumbers("patch");
     }
-
     function stopResize(event) {
       event.preventDefault();
       isResizing = false;
@@ -476,7 +463,7 @@
       window.removeEventListener("touchend", stopResize);
     }
 
-    /* On window load: restore from localStorage, set up line numbers + splitter */
+    // On load, restore from localStorage, init line numbers + splitter
     window.onload = function () {
       const saved = localStorage.getItem("scriptProject");
       if (saved) {
@@ -484,13 +471,11 @@
         document.getElementById("original").value = original || "";
         document.getElementById("patch").value = patch || "";
       }
-      // Make sure line numbers stay in sync with scrolling/typing
-      document.querySelectorAll("textarea").forEach((ta) => {
-        ta.addEventListener("scroll", () => updateLineNumbers(ta.id));
-        ta.addEventListener("input", () => updateLineNumbers(ta.id));
+      // Update line numbers on input changes
+      ["original", "patch"].forEach((id) => {
+        updateLineNumbers(id);
+        document.getElementById(id).addEventListener("input", () => updateLineNumbers(id));
       });
-      updateLineNumbers("original");
-      updateLineNumbers("patch");
       initSplitter();
     };
   </script>
