@@ -1,145 +1,358 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Script Manager Tool</title>
-<style>
-  body {
-    margin:0;
-    padding:16px;
-    background:#0d1117;
-    color:#c9d1d9;
-    font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    display:flex; flex-direction:column; height:100vh;
-  }
-  h1 { text-align:center; margin-bottom:12px; font-size:20px; }
-  .top-bar {
-    display:flex; flex-wrap:wrap; gap:8px;
-    align-items:center; margin-bottom:8px;
-  }
-  label { font-size:14px; }
-  input[type=file] {
-    height:32px; border-radius:16px; padding:0 12px;
-    background:#fff; color:#000; border:none;
-  }
-  .actions {
-    display:flex; flex-wrap:wrap; gap:8px; margin-left:auto;
-  }
-  .actions button {
-    height:32px; padding:0 12px;
-    border:none; border-radius:16px;
-    background:#238636; color:#fff;
-    font-size:14px; flex:1 1 100px;
-  }
-  .actions button:hover { background:#2ea44f }
-  .code-container {
-    display:flex; flex:1; gap:8px; overflow:hidden;
-  }
-  .panel {
-    flex:1; display:flex; background:#21262d;
-    border:1px solid #30363d; border-radius:6px;
-    overflow:hidden;
-  }
-  .line-numbers {
-    width:40px; background:#161b22; padding:10px 5px;
-    text-align:right; font-family:SFMono-Regular,monospace;
-    font-size:12px; color:#8b949e; overflow:auto;
-    border-right:1px solid #30363d;
-  }
-  textarea {
-    flex:1; border:none; padding:10px;
-    background:#21262d; color:#c9d1d9;
-    font-family:SFMono-Regular,monospace;
-    font-size:14px; line-height:1.5;
-    resize:none; overflow:auto;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script Manager Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #0d1117;
+            color: #c9d1d9;
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            margin: 10px;
+            padding: 5px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Prevents overflow issues */
+        }
+
+        .code-container {
+            display: flex;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            flex: 1;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .line-numbers {
+            width: 40px;
+            background: #161b22;
+            padding: 10px 5px;
+            text-align: right;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 12px;
+            color: #8b949e;
+            line-height: 21px;
+            border-right: 1px solid #30363d;
+            overflow-y: auto;
+        }
+
+        .code-content {
+            flex: 1;
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 14px;
+            line-height: 21px;
+            background: #21262d;
+            color: #c9d1d9;
+            border: none;
+            box-sizing: border-box;
+            resize: none;
+            overflow-y: auto;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .toolbar input[type="file"] {
+            display: none;
+        }
+
+        .toolbar label, .toolbar button {
+            padding: 5px 10px;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .toolbar button:hover, .toolbar label:hover {
+            background: #2ea44f;
+        }
+
+        .search-bar {
+            padding: 5px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 5px;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2ea44f;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+        }
+
+        .removed {
+            background: rgba(255, 0, 0, 0.2);
+            text-decoration: line-through;
+        }
+    </style>
 </head>
 <body>
-  <h1>Script Manager Tool</h1>
+    <h1>Script Manager Tool</h1>
+    <div class="container">
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Search (supports regex)" oninput="searchInScript()">
+        </div>
 
-  <div class="top-bar">
-    <label>Load Original:</label>
-    <input type="file" id="file-original" accept=".txt" onchange="loadFile('original')">
-    <label>Load Patch:</label>
-    <input type="file" id="file-patch" accept=".txt" onchange="loadFile('patch')">
-    <div class="actions">
-      <button onclick="compareScripts()">Compare</button>
-      <button onclick="applyPatch()">Apply Patch</button>
-      <button onclick="mergeScripts()">Merge</button>
-      <button onclick="clearContent()">Clear</button>
-      <button onclick="saveProject()">Save</button>
+        <div class="editor-wrapper">
+            <div class="toolbar">
+                <label for="file-input-original">Load Original</label>
+                <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
+                <label for="file-input-patch">Load Patch</label>
+                <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
+            </div>
+
+            <div class="code-container" id="original-container">
+                <div class="line-numbers" id="original-lines"></div>
+                <div class="code-content">
+                    <textarea id="original" placeholder="Original script..." oninput="updateLineNumbers('original'); autoSuggest()"></textarea>
+                </div>
+            </div>
+
+            <div class="code-container" id="patch-container">
+                <div class="line-numbers" id="patch-lines"></div>
+                <div class="code-content">
+                    <textarea id="patch" placeholder="Patch script..." oninput="updateLineNumbers('patch'); autoSuggest()"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button onclick="compareScripts()">Compare</button>
+            <button onclick="applyPatch()">Apply Patch</button>
+            <button onclick="mergeScripts()">Merge</button>
+            <button onclick="clearContent()">Clear</button>
+            <button onclick="saveProject()">Save</button>
+            <button onclick="undo()">Undo</button>
+        </div>
     </div>
-  </div>
 
-  <div class="code-container">
-    <div class="panel" id="orig-panel">
-      <div class="line-numbers" id="orig-lines"></div>
-      <textarea id="original" placeholder="Original script…" oninput="updateLines('original')"></textarea>
-    </div>
-    <div class="panel" id="patch-panel">
-      <div class="line-numbers" id="patch-lines"></div>
-      <textarea id="patch" placeholder="Patch script…" oninput="updateLines('patch')"></textarea>
-    </div>
-  </div>
+    <script>
+        let lineHeight = 21;
+        let history = [];
 
-<script>
-function loadFile(panel) {
-  const input=document.getElementById(`file-${panel}`);
-  const reader=new FileReader();
-  reader.onload=e=>{
-    document.getElementById(panel).value=e.target.result;
-    updateLines(panel);
-    localStorage.setItem(panel+'Script',e.target.result);
-  };
-  reader.readAsText(input.files[0]);
-}
+        function loadFileContent(panel) {
+            const input = document.getElementById(`file-input-${panel}`);
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                document.getElementById(panel).value = content;
+                updateLineNumbers(panel);
+                saveToHistory();
+            };
+            reader.readAsText(file);
+        }
 
-function updateLines(id) {
-  const ta=document.getElementById(id);
-  const lines=ta.value.split('\n').length;
-  const container=document.getElementById(id+'-lines');
-  container.innerHTML=Array.from({length:lines},(_,i)=>i+1).join('\n');
-}
+        function updateLineNumbers(id) {
+            const textarea = document.getElementById(id);
+            const linesDiv = document.getElementById(id + '-lines');
+            const totalLines = textarea.value.split("\n").length;
+            linesDiv.innerHTML = Array.from({ length: totalLines }, (_, i) => i + 1).join("\n");
+            linesDiv.scrollTop = textarea.scrollTop;
+        }
 
-function compareScripts(){
-  const orig=document.getElementById('original').value.split('\n');
-  const patch=document.getElementById('patch').value.split('\n');
-  let out='';
-  for(let i=0;i<Math.max(orig.length,patch.length);i++){
-    if(orig[i]===patch[i]) out+=`${orig[i]||''}\n`;
-    else{
-      if(orig[i]) out+=`<span class="removed">- ${orig[i]}</span>\n`;
-      if(patch[i]) out+=`<span class="highlight">+ ${patch[i]}</span>\n`;
-    }
-  }
-  document.getElementById('original').value=out;
-  updateLines('original');
-  const firstChange=document.querySelector('.highlight, .removed');
-  if(firstChange) firstChange.scrollIntoView({behavior:'smooth',block:'center'});
-}
+        function saveToHistory() {
+            history.push({
+                original: document.getElementById("original").value,
+                patch: Vendorsdocument.getElementById("patch").value
+            });
+            if (history.length > 20) history.shift(); // Limit history size
+        }
 
-function applyPatch(){alert('Not implemented');}
-function mergeScripts(){alert('Not implemented');}
-function clearContent(){
-  ['original','patch'].forEach(id=>{
-    document.getElementById(id).value='';
-    document.getElementById(id+'-lines').innerHTML='';
-  });
-}
-function saveProject(){
-  localStorage.setItem('originalScript',document.getElementById('original').value);
-  localStorage.setItem('patchScript',document.getElementById('patch').value);
-  alert('Saved');
-}
+        function undo() {
+            if (history.length > 1) {
+                history.pop(); // Remove current state
+                const prevState = history[history.length - 1];
+                document.getElementById("original").value = prevState.original;
+                document.getElementById("patch").value = prevState.patch;
+                updateLineNumbers("original");
+                updateLineNumbers("patch");
+            }
+        }
 
-window.onload=()=>{
-  ['original','patch'].forEach(id=>{
-    const txt=localStorage.getItem(id+'Script');
-    if(txt){ document.getElementById(id).value=txt; updateLines(id);}
-  });
-};
-</script>
+        function autoSuggest() {
+            const original = document.getElementById("original").value;
+            const patch = document.getElementById("patch").value;
+            if (original && !patch) {
+                const suggestions = generatePatchSuggestions(original);
+                document.getElementById("patch").placeholder = suggestions.join("\n");
+            }
+        }
+
+        function generatePatchSuggestions(content) {
+            // Basic intelligent suggestions (expandable)
+            const lines = content.split("\n");
+            return lines.map(line => {
+                if (line.includes("function")) return `// Modified ${line}`;
+                return line;
+            }).slice(0, 5);
+        }
+
+        function searchInScript() {
+            const searchTerm = document.getElementById("search").value;
+            const original = document.getElementById("original");
+            const patch = document.getElementById("patch");
+            try {
+                const regex = new RegExp(searchTerm, "gi");
+                const originalMatches = original.value.match(regex)?.length || 0;
+                const patchMatches = patch.value.match(regex)?.length || 0;
+                original.scrollTo(0, original.value.search(regex));
+                patch.scrollTo(0, patch.value.search(regex));
+            } catch (e) {
+                console.log("Invalid regex");
+            }
+        }
+
+        function compareScripts() {
+            const original = document.getElementById("original").value.split("\n");
+            const patch = document.getElementById("patch").value.split("\n");
+            let originalResult = "";
+            let patchResult = "";
+
+            for (let i = 0; i < Math.max(original.length, patch.length); i++) {
+                if (original[i] !== patch[i]) {
+                    originalResult += original[i] ? `<span class="removed">${original[i]}</span>\n` : "\n";
+                    patchResult += patch[i] ? `<span class="highlight">${patch[i]}</span>\n` : "\n";
+                } else {
+                    originalResult += (original[i] || "") + "\n";
+                    patchResult += (patch[i] || "") + "\n";
+                }
+            }
+
+            document.getElementById("original").innerHTML = originalResult;
+            document.getElementById("patch").innerHTML = patchResult;
+            navigateToChanges();
+            saveToHistory();
+        }
+
+        function navigateToChanges() {
+            const firstChange = document.querySelector('.highlight, .removed');
+            if (firstChange) {
+                firstChange.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function applyPatch() {
+            const original = document.getElementById("original").value;
+            const patch = document.getElementById("patch").value;
+            document.getElementById("original").value = patch || original;
+            updateLineNumbers("original");
+            saveToHistory();
+        }
+
+        function mergeScripts() {
+            const original = document.getElementById("original").value.split("\n");
+            const patch = document.getElementById("patch").value.split("\n");
+            const merged = original.map((line, i) => patch[i] || line).join("\n");
+            document.getElementById("original").value = merged;
+            updateLineNumbers("original");
+            saveToHistory();
+        }
+
+        function clearContent() {
+            document.getElementById("original").value = "";
+            document.getElementById("patch").value = "";
+            updateLineNumbers("original");
+            updateLineNumbers("patch");
+            saveToHistory();
+        }
+
+        function saveProject() {
+            const data = {
+                original: document.getElementById("original").value,
+                patch: document.getElementById("patch").value
+            };
+            localStorage.setItem('scriptProject', JSON.stringify(data));
+            alert("Project Saved!");
+        }
+
+        window.onload = function() {
+            const saved = localStorage.getItem('scriptProject');
+            if (saved) {
+                const { original, patch } = JSON.parse(saved);
+                document.getElementById("original").value = original;
+                document.getElementById("patch").value = patch;
+                updateLineNumbers("original");
+                updateLineNumbers("patch");
+            }
+            document.querySelectorAll("textarea").forEach(ta => {
+                ta.addEventListener("scroll", () => updateLineNumbers(ta.id));
+            });
+        };
+    </script>
 </body>
 </html>
