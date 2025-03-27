@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Advanced Script Manager Tool</title>
   <style>
-    /* ================== GLOBAL STYLES ================== */
+    /* ---------- Base Styles (from your previous UI) ---------- */
     body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
       padding: 0;
       background: #0d1117;
       color: #c9d1d9;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       display: flex;
-      flex-direction: column;
       height: 100vh;
-      overflow: hidden;
+      flex-direction: column;
     }
     h1 {
       font-size: 24px;
@@ -23,28 +22,22 @@
       margin: 20px;
     }
     .container {
-      flex: 1;
       display: flex;
       flex-direction: column;
       gap: 20px;
-      padding: 10px;
-      overflow: auto;
+      width: 100%;
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 20px;
     }
-    /* ================== HEADER SECTION ================== */
-    .header-section {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #0d1117;
-      padding: 10px;
-      z-index: 100;
-      border-bottom: 1px solid #30363d;
+    .file-input {
+      margin-bottom: 20px;
+      text-align: center;
     }
     .search-bar {
-      margin-top: 10px;
-      padding: 5px;
+      padding: 10px;
       background: #161b22;
+      color: #8b949e;
       border: 1px solid #30363d;
       border-radius: 6px;
     }
@@ -57,73 +50,26 @@
       border-radius: 4px;
       font-size: 14px;
     }
-    /* ================== TOOLBAR (HIDDEN BEHIND “…”) ================== */
-    #menu-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: transparent;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #c9d1d9;
-    }
-    .toolbar {
-      position: absolute;
-      top: 60px;
-      right: 10px;
-      display: none;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px;
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      z-index: 200;
-    }
-    .toolbar button, .toolbar label {
-      padding: 8px 12px;
-      background: #238636;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .toolbar button:hover, .toolbar label:hover {
-      background: #2ea44f;
-    }
-    .toolbar input[type="file"] {
-      display: none;
-    }
-    /* ================== EDITOR WRAPPER ================== */
-    .editor-wrapper {
-      margin-top: 120px; /* space for header */
-      display: flex;
-      gap: 20px;
-      flex: 1;
-    }
     .code-container {
-      flex: 1;
       display: flex;
       background: #21262d;
       border: 1px solid #30363d;
       border-radius: 6px;
-      overflow: auto;
+      height: 40vh;
+      overflow: hidden;
       position: relative;
-      min-height: 300px;
     }
     .line-numbers {
       width: 40px;
       background: #161b22;
       padding: 10px 5px;
       text-align: right;
-      font-family: monospace;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
       font-size: 12px;
       color: #8b949e;
       line-height: 21px;
       border-right: 1px solid #30363d;
-      user-select: none;
+      overflow-y: auto;
       white-space: pre;
       flex-shrink: 0;
     }
@@ -135,54 +81,47 @@
       width: 100%;
       height: 100%;
       padding: 10px;
-      font-family: monospace;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
       font-size: 14px;
       line-height: 21px;
       background: #21262d;
       color: #c9d1d9;
       border: none;
-      resize: none;
       box-sizing: border-box;
+      overflow-y: auto;
+      resize: none;
     }
-    /* ================== BUTTONS ================== */
     .buttons {
+      margin: 20px;
       text-align: center;
-      margin: 10px;
-      gap: 10px;
     }
-    .buttons button {
+    button {
       padding: 12px 24px;
+      margin: 0 8px;
+      cursor: pointer;
       background: #238636;
       color: #fff;
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       font-size: 16px;
-      cursor: pointer;
-      margin: 5px;
+      font-weight: 600;
+      transition: background 0.2s;
+      width: 180px;
     }
-    .buttons button:hover {
+    button:hover {
       background: #2ea44f;
     }
-    /* ================== SPLITTER ================== */
-    .splitter {
-      height: 5px;
-      background: #30363d;
-      cursor: ns-resize;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 5px 0;
+    /* ---------- Advanced Diff and Change List Styles ---------- */
+    .highlight {
+      background-color: rgba(39,174,96,0.2); /* green */
     }
-    .splitter-handle {
-      width: 40px;
-      height: 5px;
-      background: #8b949e;
-      border-radius: 3px;
+    .removed {
+      background-color: rgba(248,81,73,0.2); /* red */
     }
-    .splitter:hover .splitter-handle {
-      background: #c9d1d9;
+    .modified {
+      background-color: rgba(255,204,0,0.2); /* yellow */
     }
-    /* ================== DIFF VIEW OVERLAY ================== */
+    /* Diff view overlay (hidden by default) */
     #diff-view {
       position: fixed;
       top: 80px;
@@ -211,7 +150,7 @@
     .diff-line.modified {
       background: rgba(255,204,0,0.2);
     }
-    /* ================== CHANGE LIST (FLOATING SIDEBAR) ================== */
+    /* Change List Sidebar (hidden by default) */
     #change-list {
       position: fixed;
       top: 80px;
@@ -238,66 +177,56 @@
   </style>
 </head>
 <body>
-  <!-- ================== HEADER SECTION ================== -->
-  <div class="header-section">
-    <h1>Advanced Script Manager Tool</h1>
+  <h1>Script Manager Tool</h1>
+  <div class="container">
+    <!-- File Import Section -->
+    <div class="file-input">
+      <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
+      <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
+    </div>
+
+    <!-- Search Bar -->
     <div class="search-bar">
       <input type="text" id="search" placeholder="Search functions or keywords" oninput="searchInScript()">
     </div>
-    <button id="menu-btn">⋮</button>
-    <div class="toolbar">
-      <label for="file-input-original">Load Original</label>
-      <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
-      <label for="file-input-patch">Load Patch</label>
-      <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
-      <button onclick="compareScripts()">Compare</button>
-      <button onclick="applyPatch()">Apply Patch</button>
-      <button onclick="mergeScripts()">Merge</button>
-      <button onclick="clearContent()">Clear Content</button>
-      <button onclick="saveProject()">Save Project</button>
-      <button onclick="undo()">Undo</button>
-    </div>
-  </div>
 
-  <!-- ================== EDITOR WRAPPER (PANELS) ================== -->
-  <div class="editor-wrapper">
-    <!-- Original Script Panel -->
+    <!-- Code Container for Original Script -->
     <div class="code-container" id="original-container">
       <div class="line-numbers" id="original-lines"></div>
       <div class="code-content">
         <textarea id="original" placeholder="Paste your original script here..." oninput="updateLineNumbers('original')"></textarea>
       </div>
     </div>
-    <!-- Splitter -->
-    <div class="splitter">
-      <div class="splitter-handle"></div>
-    </div>
-    <!-- Patch Script Panel -->
+
+    <!-- Code Container for Patch Script -->
     <div class="code-container" id="patch-container">
       <div class="line-numbers" id="patch-lines"></div>
       <div class="code-content">
         <textarea id="patch" placeholder="Paste your patch script here..." oninput="updateLineNumbers('patch')"></textarea>
       </div>
     </div>
+
+    <!-- Buttons Section -->
+    <div class="buttons">
+      <button onclick="compareScripts()">Compare</button>
+      <button onclick="applyPatch()">Apply Patch</button>
+      <button onclick="mergeScripts()">Merge</button>
+      <button onclick="toggleDiffView()">Toggle Diff View</button>
+      <button onclick="toggleChangeList()">Toggle Change List</button>
+      <button onclick="clearContent()">Clear Content</button>
+      <button onclick="saveProject()">Save Project</button>
+      <button onclick="undo()">Undo</button>
+    </div>
   </div>
 
-  <!-- ================== BUTTONS ================== -->
-  <div class="buttons">
-    <button onclick="compareScripts()">Compare</button>
-    <button onclick="applyPatch()">Apply Patch</button>
-    <button onclick="mergeScripts()">Merge</button>
-    <button onclick="toggleDiffView()">Toggle Diff View</button>
-    <button onclick="toggleChangeList()">Toggle Change List</button>
-  </div>
-
-  <!-- ================== DIFF VIEW OVERLAY ================== -->
+  <!-- Diff View Overlay (hidden by default) -->
   <div id="diff-view"></div>
 
-  <!-- ================== CHANGE LIST SIDEBAR ================== -->
+  <!-- Change List Sidebar (hidden by default) -->
   <div id="change-list"></div>
 
   <script>
-    /* ------------------ File Loading and Line Numbers ------------------ */
+    /* ---------------- File Loading and Line Numbers ---------------- */
     function loadFileContent(panel) {
       const input = document.getElementById(`file-input-${panel}`);
       const file = input.files[0];
@@ -320,7 +249,8 @@
       }
       linesDiv.textContent = html;
     }
-    /* ------------------ Local Storage ------------------ */
+
+    /* ---------------- Local Storage Management ---------------- */
     function saveProjectToLocalStorage() {
       localStorage.setItem("originalScript", document.getElementById("original").value);
       localStorage.setItem("patchScript", document.getElementById("patch").value);
@@ -337,7 +267,8 @@
         updateLineNumbers("patch");
       }
     }
-    /* ------------------ Diff Algorithm (Simple Line-by-Line Diff) ------------------ */
+
+    /* ---------------- Diff Calculation (Simple Line-by-Line Diff) ---------------- */
     function diffLines(oldText, newText) {
       const oldLines = oldText.split("\n");
       const newLines = newText.split("\n");
@@ -348,6 +279,7 @@
           diff.push({ value: oldLines[i], line: i + 1 });
           i++; j++;
         } else {
+          // If the next line in old matches current new, mark current as removed.
           if (i + 1 < oldLines.length && oldLines[i + 1] === newLines[j]) {
             diff.push({ value: oldLines[i], line: i + 1, removed: true });
             i++;
@@ -371,7 +303,7 @@
       }
       return diff;
     }
-    /* ------------------ Diff View and Change List ------------------ */
+    /* ---------------- Diff View and Change List ---------------- */
     function showDiff() {
       const origText = document.getElementById("original").value;
       const patchText = document.getElementById("patch").value;
@@ -390,7 +322,7 @@
         } else {
           div.textContent = "  " + d.value;
         }
-        // Assign id for navigation
+        // Assign an ID for navigation purposes
         div.id = "diff-line-" + index;
         diffView.appendChild(div);
       });
@@ -415,7 +347,7 @@
       const textarea = document.getElementById("original");
       textarea.scrollTop = (lineIndex - 1) * 21;
     }
-    /* ------------------ Compare, Apply Patch, Merge ------------------ */
+    /* ---------------- Compare, Patch, and Merge Functions ---------------- */
     function compareScripts() {
       showDiff();
       toggleDiffView(true);
@@ -461,24 +393,24 @@
       updateLineNumbers("patch");
       alert("Undo: Reloaded saved project.");
     }
-    /* ------------------ Toggle Diff View and Change List ------------------ */
-    function toggleDiffView(show) {
+    /* ---------------- Toggle Diff View and Change List ---------------- */
+    function toggleDiffView(force) {
       const diffView = document.getElementById("diff-view");
-      if (typeof show === "boolean") {
-        diffView.style.display = show ? "block" : "none";
+      if (typeof force === "boolean") {
+        diffView.style.display = force ? "block" : "none";
       } else {
         diffView.style.display = diffView.style.display === "block" ? "none" : "block";
       }
     }
-    function toggleChangeList(show) {
+    function toggleChangeList(force) {
       const changeList = document.getElementById("change-list");
-      if (typeof show === "boolean") {
-        changeList.style.display = show ? "block" : "none";
+      if (typeof force === "boolean") {
+        changeList.style.display = force ? "block" : "none";
       } else {
         changeList.style.display = changeList.style.display === "block" ? "none" : "block";
       }
     }
-    /* ------------------ Advanced Search ------------------ */
+    /* ---------------- Advanced Search ---------------- */
     function searchInScript() {
       const term = document.getElementById("search").value;
       const text = document.getElementById("original").value;
@@ -488,48 +420,9 @@
         scrollToLine(line);
       }
     }
-    /* ------------------ Splitter Functionality ------------------ */
-    let isResizing = false, startY, startHeightTop, startHeightBottom, splitter = null;
-    function initSplitter() {
-      splitter = document.querySelector(".splitter");
-      splitter.addEventListener("mousedown", startResize);
-      splitter.addEventListener("touchstart", startResize, { passive: false });
-    }
-    function startResize(e) {
-      e.preventDefault();
-      isResizing = true;
-      startY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
-      const topPanel = document.getElementById("original-container");
-      const bottomPanel = document.getElementById("patch-container");
-      startHeightTop = topPanel.offsetHeight;
-      startHeightBottom = bottomPanel.offsetHeight;
-      window.addEventListener("mousemove", resizePanels);
-      window.addEventListener("mouseup", stopResize);
-      window.addEventListener("touchmove", resizePanels, { passive: false });
-      window.addEventListener("touchend", stopResize);
-    }
-    function resizePanels(e) {
-      if (!isResizing) return;
-      e.preventDefault();
-      const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
-      const deltaY = clientY - startY;
-      const topPanel = document.getElementById("original-container");
-      const bottomPanel = document.getElementById("patch-container");
-      const totalHeight = topPanel.offsetHeight + bottomPanel.offsetHeight;
-      let newTopHeight = Math.max(100, Math.min(startHeightTop + deltaY, totalHeight - 100));
-      let newBottomHeight = totalHeight - newTopHeight;
-      topPanel.style.flex = `0 0 ${newTopHeight}px`;
-      bottomPanel.style.flex = `0 0 ${newBottomHeight}px`;
-    }
-    function stopResize(e) {
-      e.preventDefault();
-      isResizing = false;
-      window.removeEventListener("mousemove", resizePanels);
-      window.removeEventListener("mouseup", stopResize);
-      window.removeEventListener("touchmove", resizePanels);
-      window.removeEventListener("touchend", stopResize);
-    }
-    /* ------------------ Auto-Save on Unload and Initialization ------------------ */
+    /* ---------------- Splitter Functionality ---------------- */
+    // (The previous UI did not include a draggable splitter – we maintain the original layout)
+    /* ---------------- Auto-Save and Initialization ---------------- */
     window.onbeforeunload = function() {
       saveProjectToLocalStorage();
     };
@@ -537,7 +430,6 @@
       loadProjectFromLocalStorage();
       updateLineNumbers("original");
       updateLineNumbers("patch");
-      initSplitter();
     };
   </script>
 </body>
