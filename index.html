@@ -197,7 +197,7 @@
                 </div>
             </div>
 
-            <div class="splitter" onmousedown="startResize(event)" ontouchstart="startResize(event)"></div>
+            <div class="splitter"></div>
 
             <div class="code-container" id="patch-container">
                 <div class="line-numbers" id="patch-lines"></div>
@@ -215,6 +215,7 @@
         let startY;
         let startHeightTop;
         let startHeightBottom;
+        let splitter = null;
 
         function loadFileContent(panel) {
             const input = document.getElementById(`file-input-${panel}`);
@@ -293,13 +294,13 @@
         }
 
         function compareScripts() {
-            const original = document.getElementById("original").value.split("\n");
-            const patch = document.getElementById("patch").value.split("\n");
-            let originalResult = original.join("\n");
-            let patchResult = patch.join("\n");
+            const original = document.getElementById("original").value;
+            const patch = document.getElementById("patch").value;
 
-            document.getElementById("original").value = originalResult.trim();
-            document.getElementById("patch").value = patchResult.trim();
+            // Simply display the content as-is, no comparison logic
+            document.getElementById("original").value = original;
+            document.getElementById("patch").value = patch;
+
             navigateToChanges();
             saveToHistory();
         }
@@ -355,6 +356,12 @@
         }
 
         // Splitter resize functionality
+        function initSplitter() {
+            splitter = document.querySelector('.splitter');
+            splitter.addEventListener('mousedown', startResize);
+            splitter.addEventListener('touchstart', startResize);
+        }
+
         function startResize(event) {
             event.preventDefault();
             isResizing = true;
@@ -365,13 +372,6 @@
             startHeightTop = topPanel.offsetHeight;
             startHeightBottom = bottomPanel.offsetHeight;
 
-            // Remove previous listeners to avoid duplicates
-            document.removeEventListener('mousemove', resizePanels);
-            document.removeEventListener('mouseup', stopResize);
-            document.removeEventListener('touchmove', resizePanels);
-            document.removeEventListener('touchend', stopResize);
-
-            // Add new listeners
             document.addEventListener('mousemove', resizePanels);
             document.addEventListener('mouseup', stopResize);
             document.addEventListener('touchmove', resizePanels);
@@ -380,6 +380,7 @@
 
         function resizePanels(event) {
             if (!isResizing) return;
+            event.preventDefault();
             const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
             const deltaY = clientY - startY;
 
@@ -397,9 +398,13 @@
             updateLineNumbers('patch');
         }
 
-        function stopResize() {
+        function stopResize(event) {
+            event.preventDefault();
             isResizing = false;
-            // No need to remove listeners here since we handle it in startResize
+            document.removeEventListener('mousemove', resizePanels);
+            document.removeEventListener('mouseup', stopResize);
+            document.removeEventListener('touchmove', resizePanels);
+            document.removeEventListener('touchend', stopResize);
         }
 
         window.onload = function() {
@@ -417,6 +422,7 @@
             });
             updateLineNumbers("original");
             updateLineNumbers("patch");
+            initSplitter();
         };
     </script>
 </body>
