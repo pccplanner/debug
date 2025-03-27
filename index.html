@@ -36,6 +36,7 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            position: relative;
         }
 
         .code-container {
@@ -43,10 +44,29 @@
             background: #21262d;
             border: 1px solid #30363d;
             border-radius: 6px;
-            flex: 1;
             overflow: hidden;
             position: relative;
-            margin-bottom: 10px;
+        }
+
+        #original-container {
+            flex: 1; /* Initial proportion */
+        }
+
+        #patch-container {
+            flex: 1; /* Initial proportion */
+        }
+
+        .splitter {
+            height: 5px;
+            background: #30363d;
+            cursor: ns-resize;
+            position: relative;
+            z-index: 1;
+            touch-action: none;
+        }
+
+        .splitter:hover {
+            background: #8b949e;
         }
 
         .line-numbers {
@@ -82,18 +102,6 @@
             resize: none;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-        }
-
-        .resize-handle {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 15px; /* Smaller handle */
-            height: 15px;
-            background: #ccc;
-            border-radius: 50%;
-            cursor: ns-resize;
-            touch-action: none;
         }
 
         .toolbar {
@@ -187,15 +195,15 @@
                 <div class="line-numbers" id="original-lines"></div>
                 <div class="code-content">
                     <textarea id="original" placeholder="Original script..." oninput="updateLineNumbers('original'); autoSuggest()"></textarea>
-                    <div class="resize-handle" onmousedown="startResize(event, 'original-container')" ontouchstart="startResize(event, 'original-container')"></div>
                 </div>
             </div>
+
+            <div class="splitter" onmousedown="startResize(event)" ontouchstart="startResize(event)"></div>
 
             <div class="code-container" id="patch-container">
                 <div class="line-numbers" id="patch-lines"></div>
                 <div class="code-content">
                     <textarea id="patch" placeholder="Patch script..." oninput="updateLineNumbers('patch'); autoSuggest()"></textarea>
-                    <div class="resize-handle" onmousedown="startResize(event, 'patch-container')" ontouchstart="startResize(event, 'patch-container')"></div>
                 </div>
             </div>
         </div>
@@ -214,8 +222,9 @@
         let lineHeight = 21;
         let history = [];
         let isResizing = false;
-        let currentResizePanel = '';
         let startY;
+        let startHeightTop;
+        let startHeightBottom;
 
         function loadFileContent(panel) {
             const input = document.getElementById(`file-input-${panel}`);
@@ -347,35 +356,47 @@
             alert("Project Saved!");
         }
 
-        // Resize functionality
-        function startResize(event, panelId) {
+        // Splitter resize functionality
+        function startResize(event) {
             event.preventDefault();
             isResizing = true;
-            currentResizePanel = panelId;
             startY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
 
-            document.addEventListener('mousemove', resizePanel);
+            const topPanel = document.getElementById('original-container');
+            const bottomPanel = document.getElementById('patch-container');
+            startHeightTop = topPanel.offsetHeight;
+            startHeightBottom = bottomPanel.offsetHeight;
+
+            document.addEventListener('mousemove', resizePanels);
             document.addEventListener('mouseup', stopResize);
-            document.addEventListener('touchmove', resizePanel);
+            document.addEventListener('touchmove', resizePanels);
             document.addEventListener('touchend', stopResize);
         }
 
-        function resizePanel(event) {
+        function resizePanels(event) {
             if (!isResizing) return;
-            const panel = document.getElementById(currentResizePanel);
-            const rect = panel.getBoundingClientRect();
             const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
-            const newHeight = Math.max(100, Math.min(rect.height + (clientY - startY), window.innerHeight - 150));
-            panel.style.height = newHeight + 'px';
-            startY = clientY;
-            updateLineNumbers(currentResizePanel.replace('-container', ''));
+            const deltaY = clientY - startY;
+
+            const topPanel = document.getElementById('original-container');
+            const bottomPanel = document.getElementById('patch-container');
+            const totalHeight = topPanel.offsetHeight + bottomPanel.offsetHeight;
+
+            let newTopHeight = Math.max(50, Math.min(startHeightTop + deltaY, totalHeight - 50));
+            let newBottomHeight = totalHeight - newTopHeight;
+
+            topPanel.style.flex = `0 0 ${newTopHeight}px`;
+            bottomPanel.style.flex = `0 0 ${newBottomHeight}px`;
+
+            updateLineNumbers('original');
+            updateLineNumbers('patch');
         }
 
         function stopResize() {
             isResizing = false;
-            document.removeEventListener('mousemove', resizePanel);
+            document.removeEventListener('mousemove', resizePanels);
             document.removeEventListener('mouseup', stopResize);
-            document.removeEventListener('touchmove', resizePanel);
+            document.removeEventListener('touchmove', resizePanels);
             document.removeEventListener('touchend', stopResize);
         }
 
