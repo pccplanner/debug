@@ -56,8 +56,9 @@
             background: #21262d;
             border: 1px solid #30363d;
             border-radius: 6px;
-            position: relative; /* Positioning context for line numbers */
+            position: relative;
             max-height: 100%;
+            overflow: hidden; /* Prevent overflow from affecting line numbers */
         }
 
         #original-container {
@@ -112,10 +113,9 @@
             color: #8b949e;
             line-height: 21px;
             border-right: 1px solid #30363d;
-            position: absolute; /* Position relative to the code-container */
+            position: sticky;
             left: 0;
             top: 0;
-            bottom: 0;
             z-index: 1;
             user-select: none;
             white-space: pre; /* Ensure line breaks are rendered */
@@ -269,6 +269,9 @@
                 lineNumbers += i + '\n';
             }
             linesDiv.innerHTML = lineNumbers;
+
+            // Dynamically adjust the height of the line numbers to match the textarea content
+            linesDiv.style.height = `${textarea.scrollHeight}px`;
 
             const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
             linesDiv.scrollTop = scrollPercentage * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
