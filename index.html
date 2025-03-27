@@ -74,10 +74,25 @@
             position: relative;
             z-index: 1;
             touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .splitter:hover {
             background: #8b949e;
+        }
+
+        .splitter-handle {
+            width: 40px;
+            height: 5px;
+            background: #8b949e;
+            border-radius: 3px;
+            position: absolute;
+        }
+
+        .splitter:hover .splitter-handle {
+            background: #c9d1d9;
         }
 
         .line-numbers {
@@ -197,7 +212,9 @@
                 </div>
             </div>
 
-            <div class="splitter"></div>
+            <div class="splitter">
+                <div class="splitter-handle"></div>
+            </div>
 
             <div class="code-container" id="patch-container">
                 <div class="line-numbers" id="patch-lines"></div>
@@ -220,6 +237,7 @@
         function loadFileContent(panel) {
             const input = document.getElementById(`file-input-${panel}`);
             const file = input.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById(panel).value = e.target.result;
@@ -294,10 +312,10 @@
         }
 
         function compareScripts() {
+            // Simply ensure each panel retains its own content
             const original = document.getElementById("original").value;
             const patch = document.getElementById("patch").value;
 
-            // Simply display the content as-is, no comparison logic
             document.getElementById("original").value = original;
             document.getElementById("patch").value = patch;
 
@@ -322,8 +340,10 @@
             const patch = document.getElementById("patch").value;
             if (patch) {
                 document.getElementById("original").value = patch;
+                document.getElementById("patch").value = ""; // Clear patch panel
             }
             updateLineNumbers("original");
+            updateLineNumbers("patch");
             saveToHistory();
         }
 
@@ -359,7 +379,7 @@
         function initSplitter() {
             splitter = document.querySelector('.splitter');
             splitter.addEventListener('mousedown', startResize);
-            splitter.addEventListener('touchstart', startResize);
+            splitter.addEventListener('touchstart', startResize, { passive: false });
         }
 
         function startResize(event) {
@@ -372,10 +392,11 @@
             startHeightTop = topPanel.offsetHeight;
             startHeightBottom = bottomPanel.offsetHeight;
 
-            document.addEventListener('mousemove', resizePanels);
-            document.addEventListener('mouseup', stopResize);
-            document.addEventListener('touchmove', resizePanels);
-            document.addEventListener('touchend', stopResize);
+            // Add event listeners for dragging
+            window.addEventListener('mousemove', resizePanels);
+            window.addEventListener('mouseup', stopResize);
+            window.addEventListener('touchmove', resizePanels, { passive: false });
+            window.addEventListener('touchend', stopResize);
         }
 
         function resizePanels(event) {
@@ -401,10 +422,10 @@
         function stopResize(event) {
             event.preventDefault();
             isResizing = false;
-            document.removeEventListener('mousemove', resizePanels);
-            document.removeEventListener('mouseup', stopResize);
-            document.removeEventListener('touchmove', resizePanels);
-            document.removeEventListener('touchend', stopResize);
+            window.removeEventListener('mousemove', resizePanels);
+            window.removeEventListener('mouseup', stopResize);
+            window.removeEventListener('touchmove', resizePanels);
+            window.removeEventListener('touchend', stopResize);
         }
 
         window.onload = function() {
