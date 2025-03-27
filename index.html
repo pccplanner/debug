@@ -21,7 +21,6 @@
             font-size: 20px;
             text-align: center;
             margin: 10px;
-            padding: 5px;
         }
 
         .container {
@@ -36,7 +35,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-height: 0; /* Prevents overflow issues */
+            min-height: 0;
         }
 
         .code-container {
@@ -46,6 +45,7 @@
             border-radius: 6px;
             flex: 1;
             overflow: hidden;
+            position: relative;
             margin-bottom: 10px;
         }
 
@@ -60,6 +60,7 @@
             line-height: 21px;
             border-right: 1px solid #30363d;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .code-content {
@@ -80,6 +81,19 @@
             box-sizing: border-box;
             resize: none;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 15px; /* Smaller handle */
+            height: 15px;
+            background: #ccc;
+            border-radius: 50%;
+            cursor: ns-resize;
+            touch-action: none;
         }
 
         .toolbar {
@@ -104,7 +118,7 @@
             cursor: pointer;
         }
 
-        .toolbar button:hover, .toolbar label:hover {
+        .toolbar label:hover, .toolbar button:hover {
             background: #2ea44f;
         }
 
@@ -150,14 +164,8 @@
             background: #2ea44f;
         }
 
-        .highlight {
-            background: rgba(255, 255, 0, 0.2);
-        }
-
-        .removed {
-            background: rgba(255, 0, 0, 0.2);
-            text-decoration: line-through;
-        }
+        .highlight { background: rgba(255, 255, 0, 0.2); }
+        .removed { background: rgba(255, 0, 0, 0.2); text-decoration: line-through; }
     </style>
 </head>
 <body>
@@ -179,6 +187,7 @@
                 <div class="line-numbers" id="original-lines"></div>
                 <div class="code-content">
                     <textarea id="original" placeholder="Original script..." oninput="updateLineNumbers('original'); autoSuggest()"></textarea>
+                    <div class="resize-handle" onmousedown="startResize(event, 'original-container')" ontouchstart="startResize(event, 'original-container')"></div>
                 </div>
             </div>
 
@@ -186,6 +195,7 @@
                 <div class="line-numbers" id="patch-lines"></div>
                 <div class="code-content">
                     <textarea id="patch" placeholder="Patch script..." oninput="updateLineNumbers('patch'); autoSuggest()"></textarea>
+                    <div class="resize-handle" onmousedown="startResize(event, 'patch-container')" ontouchstart="startResize(event, 'patch-container')"></div>
                 </div>
             </div>
         </div>
@@ -203,14 +213,16 @@
     <script>
         let lineHeight = 21;
         let history = [];
+        let isResizing = false;
+        let currentResizePanel = '';
+        let startY;
 
         function loadFileContent(panel) {
             const input = document.getElementById(`file-input-${panel}`);
             const file = input.files[0];
             const reader = new FileReader();
             reader.onload = function(e) {
-                const content = e.target.result;
-                document.getElementById(panel).value = content;
+                document.getElementById(panel).value = e.target.result;
                 updateLineNumbers(panel);
                 saveToHistory();
             };
@@ -228,14 +240,14 @@
         function saveToHistory() {
             history.push({
                 original: document.getElementById("original").value,
-                patch: Vendorsdocument.getElementById("patch").value
+                patch: document.getElementById("patch").value
             });
-            if (history.length > 20) history.shift(); // Limit history size
+            if (history.length > 20) history.shift();
         }
 
         function undo() {
             if (history.length > 1) {
-                history.pop(); // Remove current state
+                history.pop();
                 const prevState = history[history.length - 1];
                 document.getElementById("original").value = prevState.original;
                 document.getElementById("patch").value = prevState.patch;
@@ -254,7 +266,6 @@
         }
 
         function generatePatchSuggestions(content) {
-            // Basic intelligent suggestions (expandable)
             const lines = content.split("\n");
             return lines.map(line => {
                 if (line.includes("function")) return `// Modified ${line}`;
@@ -268,8 +279,6 @@
             const patch = document.getElementById("patch");
             try {
                 const regex = new RegExp(searchTerm, "gi");
-                const originalMatches = original.value.match(regex)?.length || 0;
-                const patchMatches = patch.value.match(regex)?.length || 0;
                 original.scrollTo(0, original.value.search(regex));
                 patch.scrollTo(0, patch.value.search(regex));
             } catch (e) {
@@ -301,9 +310,7 @@
 
         function navigateToChanges() {
             const firstChange = document.querySelector('.highlight, .removed');
-            if (firstChange) {
-                firstChange.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            if (firstChange) firstChange.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function applyPatch() {
@@ -338,6 +345,38 @@
             };
             localStorage.setItem('scriptProject', JSON.stringify(data));
             alert("Project Saved!");
+        }
+
+        // Resize functionality
+        function startResize(event, panelId) {
+            event.preventDefault();
+            isResizing = true;
+            currentResizePanel = panelId;
+            startY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
+
+            document.addEventListener('mousemove', resizePanel);
+            document.addEventListener('mouseup', stopResize);
+            document.addEventListener('touchmove', resizePanel);
+            document.addEventListener('touchend', stopResize);
+        }
+
+        function resizePanel(event) {
+            if (!isResizing) return;
+            const panel = document.getElementById(currentResizePanel);
+            const rect = panel.getBoundingClientRect();
+            const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
+            const newHeight = Math.max(100, Math.min(rect.height + (clientY - startY), window.innerHeight - 150));
+            panel.style.height = newHeight + 'px';
+            startY = clientY;
+            updateLineNumbers(currentResizePanel.replace('-container', ''));
+        }
+
+        function stopResize() {
+            isResizing = false;
+            document.removeEventListener('mousemove', resizePanel);
+            document.removeEventListener('mouseup', stopResize);
+            document.removeEventListener('touchmove', resizePanel);
+            document.removeEventListener('touchend', stopResize);
         }
 
         window.onload = function() {
