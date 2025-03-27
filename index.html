@@ -55,6 +55,7 @@
             border-radius: 6px;
             box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            flex: 1;
         }
 
         .line-numbers {
@@ -67,11 +68,9 @@
             user-select: none;
             width: 40px;
             flex-shrink: 0;
-            line-height: 1.5em;
+            line-height: 21px; /* Matches textarea */
             border-right: 1px solid #30363d;
-            overflow: hidden;
-            white-space: pre;
-            transition: height 0.3s ease;
+            overflow-y: scroll;
         }
 
         .code-content {
@@ -88,7 +87,7 @@
             box-sizing: border-box;
             margin: 0;
             border: none;
-            line-height: 1.5em;
+            line-height: 21px; /* Fixed value to match calculated 14px * 1.5 */
             background: #21262d;
             color: #c9d1d9;
             overflow-x: auto;
@@ -145,7 +144,7 @@
             <div class="code-container" id="original-container">
                 <div class="line-numbers" id="original-lines"></div>
                 <div class="code-content">
-                    <textarea id="original" placeholder="Paste your original script here" oninput="updateLineNumbers('original')" onscroll="syncScroll('original')" onmousedown="startResize('original')"></textarea>
+                    <textarea id="original" placeholder="Paste your original script here" wrap="off" oninput="updateLineNumbers('original')" onscroll="syncScroll('original')" onmousedown="startResize(event, 'original')" ontouchstart="startResize(event, 'original')"></textarea>
                 </div>
             </div>
         </div>
@@ -154,7 +153,7 @@
             <div class="code-container" id="patch-container">
                 <div class="line-numbers" id="patch-lines"></div>
                 <div class="code-content">
-                    <textarea id="patch" placeholder="Paste your patch script here" oninput="updateLineNumbers('patch')" onscroll="syncScroll('patch')" onmousedown="startResize('patch')"></textarea>
+                    <textarea id="patch" placeholder="Paste your patch script here" wrap="off" oninput="updateLineNumbers('patch')" onscroll="syncScroll('patch')" onmousedown="startResize(event, 'patch')" ontouchstart="startResize(event, 'patch')"></textarea>
                 </div>
             </div>
         </div>
@@ -177,47 +176,71 @@
         let isResizing = false;
         let currentResizePanel = '';
         let startX, startY;
-        let lineHeight = 16; // Line height for the textarea and line numbers
+        let lineHeight = 21;
 
-        function startResize(panel) {
+        function startResize(event, panel) {
             isResizing = true;
             currentResizePanel = panel;
-            document.addEventListener('mousemove', resizePanel);
-            document.addEventListener('mouseup', stopResize);
+
+            if (event.type === 'mousedown') {
+                startX = event.clientX;
+                startY = event.clientY;
+                document.addEventListener('mousemove', resizePanel);
+                document.addEventListener('mouseup', stopResize);
+            } else if (event.type === 'touchstart') {
+                const touch = event.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+                document.addEventListener('touchmove', resizePanel);
+                document.addEventListener('touchend', stopResize);
+            }
+            event.preventDefault();
         }
 
         function resizePanel(event) {
             if (!isResizing) return;
-            
+
+            let clientX, clientY;
+            if (event.type === 'mousemove') {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            } else if (event.type === 'touchmove') {
+                const touch = event.touches[0];
+                clientX = touch.clientX;
+                clientY = touch.clientY;
+            }
+
             const panel = document.getElementById(currentResizePanel);
             const rect = panel.getBoundingClientRect();
-            
-            const newWidth = Math.max(200, rect.width + (event.clientX - startX));
-            const newHeight = Math.max(100, rect.height + (event.clientY - startY));
+            const newWidth = Math.max(200, rect.width + (clientX - startX));
+            const newHeight = Math.max(100, rect.height + (clientY - startY));
 
             panel.style.width = newWidth + 'px';
             panel.style.height = newHeight + 'px';
-            startX = event.clientX;
-            startY = event.clientY;
+            startX = clientX;
+            startY = clientY;
         }
 
-        function stopResize() {
+        function stopResize(event) {
             isResizing = false;
-            document.removeEventListener('mousemove', resizePanel);
-            document.removeEventListener('mouseup', stopResize);
+            if (event.type === 'mouseup') {
+                document.removeEventListener('mousemove', resizePanel);
+                document.removeEventListener('mouseup', stopResize);
+            } else if (event.type === 'touchend') {
+                document.removeEventListener('touchmove', resizePanel);
+                document.removeEventListener('touchend', stopResize);
+            }
         }
 
         function updateLineNumbers(id) {
             const textarea = document.getElementById(id);
             const linesDiv = document.getElementById(id + '-lines');
             const lines = textarea.value.split('\n').length;
-            const visibleLines = Math.ceil(textarea.offsetHeight / lineHeight);
 
             linesDiv.innerHTML = '';
-            for (let i = 1; i <= Math.min(lines, visibleLines); i++) {
+            for (let i = 1; i <= lines; i++) {
                 linesDiv.innerHTML += i + '\n';
             }
-            linesDiv.style.height = textarea.scrollHeight + 'px';
         }
 
         function syncScroll(id) {
