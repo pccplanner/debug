@@ -1,40 +1,277 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Minimal Fetch Debug</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script Compare & Patch</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background: #0d1117;
+            color: #c9d1d9;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            color: #c9d1d9;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+        }
+
+        .input-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .input-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #c9d1d9;
+            margin-bottom: 8px;
+        }
+
+        .code-container {
+            position: relative;
+            display: flex;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            background: #161b22;
+            padding: 10px 5px;
+            text-align: right;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 12px;
+            color: #8b949e;
+            user-select: none;
+            width: 40px;
+            flex-shrink: 0;
+            line-height: 1.5em;
+            border-right: 1px solid #30363d;
+            overflow: hidden;
+            white-space: pre;
+            transition: height 0.3s ease;
+        }
+
+        .code-content {
+            flex: 1;
+            position: relative;
+        }
+
+        textarea, .code-pre {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+            margin: 0;
+            border: none;
+            line-height: 1.5em;
+            background: #21262d;
+            color: #c9d1d9;
+            overflow-x: auto;
+            overflow-y: auto;
+            resize: none;
+            min-height: 100px;
+            min-width: 200px;
+        }
+
+        .buttons {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 0 8px;
+            cursor: pointer;
+            background: #238636;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2ea44f;
+        }
+
+        #output {
+            margin-top: 20px;
+        }
+
+        #result {
+            background: #21262d;
+            padding: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5em;
+        }
+
+        .added { color: #2ea44f; }
+        .removed { color: #f85149; }
+        .conflict { color: #fbbf24; font-weight: bold; }
+    </style>
 </head>
 <body>
-  <h1>Minimal API Debug</h1>
-  <button id="testFetchBtn">Test Fetch</button>
+    <h1>Script Compare & Patch</h1>
+    <div class="container">
+        <div class="input-section">
+            <h2>Original Script</h2>
+            <div class="code-container" id="original-container">
+                <div class="line-numbers" id="original-lines"></div>
+                <div class="code-content">
+                    <textarea id="original" placeholder="Paste your original script here" oninput="updateLineNumbers('original')" onscroll="syncScroll('original')" onmousedown="startResize('original')"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="input-section">
+            <h2>Patch Script</h2>
+            <div class="code-container" id="patch-container">
+                <div class="line-numbers" id="patch-lines"></div>
+                <div class="code-content">
+                    <textarea id="patch" placeholder="Paste your patch script here" oninput="updateLineNumbers('patch')" onscroll="syncScroll('patch')" onmousedown="startResize('patch')"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="buttons">
+        <button onclick="compareScripts()">Compare</button>
+        <button onclick="applyPatch()">Apply Patch</button>
+        <button onclick="mergeScripts()">Merge</button>
+    </div>
+    <div id="output">
+        <h2>Result</h2>
+        <div class="code-container" id="result-container">
+            <div class="line-numbers" id="result-lines"></div>
+            <div class="code-content">
+                <pre id="result" class="code-pre"></pre>
+            </div>
+        </div>
+    </div>
+    <script>
+        let isResizing = false;
+        let currentResizePanel = '';
+        let startX, startY;
+        let lineHeight = 16; // Line height for the textarea and line numbers
 
-  <pre id="output" style="border:1px solid #ccc; padding:8px;"></pre>
+        function startResize(panel) {
+            isResizing = true;
+            currentResizePanel = panel;
+            document.addEventListener('mousemove', resizePanel);
+            document.addEventListener('mouseup', stopResize);
+        }
 
-  <script>
-    // Replace with your actual domain or IP + route
-    const DEBUG_API_URL = "https://YOUR_VPS_DOMAIN/api/get_leaves";
+        function resizePanel(event) {
+            if (!isResizing) return;
+            
+            const panel = document.getElementById(currentResizePanel);
+            const rect = panel.getBoundingClientRect();
+            
+            const newWidth = Math.max(200, rect.width + (event.clientX - startX));
+            const newHeight = Math.max(100, rect.height + (event.clientY - startY));
 
-    document.getElementById("testFetchBtn").onclick = function() {
-      const outputEl = document.getElementById("output");
-      outputEl.textContent = "Fetching: " + DEBUG_API_URL + "\n";
+            panel.style.width = newWidth + 'px';
+            panel.style.height = newHeight + 'px';
+            startX = event.clientX;
+            startY = event.clientY;
+        }
 
-      fetch(DEBUG_API_URL)
-        .then(response => {
-          outputEl.textContent += "Status: " + response.status + " " + response.statusText + "\n";
-          if (!response.ok) {
-            throw new Error("HTTP error, status = " + response.status);
-          }
-          return response.json();
-        })
-        .then(data => {
-          // If JSON parse is fine, log the data
-          outputEl.textContent += "Data:\n" + JSON.stringify(data, null, 2);
-        })
-        .catch(err => {
-          // Catch network errors, CORS issues, etc.
-          outputEl.textContent += "ERROR: " + err + "\n";
-        });
-    };
-  </script>
+        function stopResize() {
+            isResizing = false;
+            document.removeEventListener('mousemove', resizePanel);
+            document.removeEventListener('mouseup', stopResize);
+        }
+
+        function updateLineNumbers(id) {
+            const textarea = document.getElementById(id);
+            const linesDiv = document.getElementById(id + '-lines');
+            const lines = textarea.value.split('\n').length;
+            const visibleLines = Math.ceil(textarea.offsetHeight / lineHeight);
+
+            linesDiv.innerHTML = '';
+            for (let i = 1; i <= Math.min(lines, visibleLines); i++) {
+                linesDiv.innerHTML += i + '\n';
+            }
+            linesDiv.style.height = textarea.scrollHeight + 'px';
+        }
+
+        function syncScroll(id) {
+            const textarea = document.getElementById(id);
+            const linesDiv = document.getElementById(id + '-lines');
+            linesDiv.scrollTop = textarea.scrollTop;
+        }
+
+        function compareScripts() {
+            const original = document.getElementById('original').value.split('\n');
+            const patch = document.getElementById('patch').value.split('\n');
+            const result = document.getElementById('result');
+            
+            let diff = [];
+            for (let i = 0; i < Math.max(original.length, patch.length); i++) {
+                if (original[i] === patch[i]) {
+                    diff.push(`  ${original[i] || ''}`);
+                } else {
+                    if (original[i]) diff.push(`<span class="removed">- ${original[i]}</span>`);
+                    if (patch[i]) diff.push(`<span class="added">+ ${patch[i]}</span>`);
+                }
+            }
+            
+            result.innerHTML = diff.join('\n');
+        }
+
+        function applyPatch() {
+            const patch = document.getElementById('patch').value;
+            document.getElementById('original').value = patch;
+            document.getElementById('result').innerHTML = 'Patch applied to original script!';
+        }
+
+        function mergeScripts() {
+            const original = document.getElementById('original').value.split('\n');
+            const patch = document.getElementById('patch').value.split('\n');
+            const result = document.getElementById('result');
+            
+            let merged = [];
+            for (let i = 0; i < Math.max(original.length, patch.length); i++) {
+                if (original[i] === patch[i]) {
+                    merged.push(original[i] || '');
+                } else {
+                    if (original[i]) merged.push(`<<<<<<< ORIGINAL\n${original[i]}`);
+                    if (patch[i]) merged.push(`${patch[i]}\n>>>>>>> PATCH`);
+                }
+            }
+            
+            result.innerHTML = merged.join('\n');
+        }
+
+        window.onload = function() {
+            updateLineNumbers('original');
+            updateLineNumbers('patch');
+        };
+    </script>
 </body>
 </html>
