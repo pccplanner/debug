@@ -66,6 +66,7 @@
             min-height: 100px;
             max-height: 100%;
             overflow-y: auto;
+            position: relative; /* Ensure proper positioning context for line numbers */
         }
 
         #patch-container {
@@ -73,6 +74,7 @@
             min-height: 100px;
             max-height: 100%;
             overflow-y: auto;
+            position: relative; /* Ensure proper positioning context for line numbers */
         }
 
         .splitter {
@@ -113,16 +115,26 @@
             color: #8b949e;
             line-height: 21px;
             border-right: 1px solid #30363d;
-            position: sticky;
-            left: 0;
-            top: 0;
+            position: fixed; /* Use fixed to lock in place */
+            top: 120px; /* Adjust for fixed header height */
+            bottom: 0;
             z-index: 1;
             user-select: none;
+            white-space: pre; /* Ensure line breaks are rendered */
+        }
+
+        #original-lines {
+            left: 10px; /* Align with the left edge of the container */
+        }
+
+        #patch-lines {
+            left: 10px; /* Align with the left edge of the container */
         }
 
         .code-content {
             flex: 1;
             position: relative;
+            margin-left: 50px; /* Make space for the fixed line numbers */
         }
 
         textarea {
