@@ -33,7 +33,7 @@
         }
 
         .header-section {
-            position: fixed; /* Changed to fixed to lock at the top */
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
@@ -47,8 +47,8 @@
             flex-direction: column;
             min-height: 0;
             position: relative;
-            overflow: hidden;
-            margin-top: 120px; /* Adjust for the fixed header height */
+            overflow-y: auto; /* Allow scrolling to keep splitter in view */
+            margin-top: 120px;
         }
 
         .code-container {
@@ -58,16 +58,21 @@
             border-radius: 6px;
             overflow: hidden;
             position: relative;
+            max-height: 100%; /* Prevent panels from growing beyond available space */
         }
 
         #original-container {
             flex: 1 1 50%;
             min-height: 100px;
+            max-height: 100%; /* Constrain height */
+            overflow-y: auto; /* Allow internal scrolling */
         }
 
         #patch-container {
             flex: 1 1 50%;
             min-height: 100px;
+            max-height: 100%; /* Constrain height */
+            overflow-y: auto; /* Allow internal scrolling */
         }
 
         .splitter {
@@ -108,7 +113,7 @@
             color: #8b949e;
             line-height: 21px;
             border-right: 1px solid #30363d;
-            position: sticky; /* Lock the line numbers in place */
+            position: sticky;
             left: 0;
             top: 0;
             bottom: 0;
