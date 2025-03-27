@@ -2,42 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Script Manager Tool</title>
   <style>
-    /* ========= GLOBAL STYLES ========= */
+    /* ================== GLOBAL STYLES ================== */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
       padding: 0;
       background: #0d1117;
       color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       display: flex;
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
-    }
-    /* ========= HEADER SECTION ========= */
-    .header-section {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #0d1117;
-      z-index: 10;
-      padding: 10px;
-      border-bottom: 1px solid #30363d;
     }
     h1 {
       font-size: 20px;
       text-align: center;
       margin: 10px 0;
     }
-    /* Search bar is always visible */
+
+    /* ================== HEADER SECTION ================== */
+    .header-section {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #0d1117;
+      z-index: 10;
+      padding: 10px;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #menu-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    /* ================== SEARCH BAR ================== */
     .search-bar {
       width: 100%;
       max-width: 600px;
-      margin: 0 auto;
+      display: flex;
+      justify-content: center;
       padding: 5px;
       background: #161b22;
       border: 1px solid #30363d;
@@ -53,21 +67,11 @@
       border-radius: 4px;
       font-size: 12px;
     }
-    /* Menu button for toolbar */
-    #menu-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: transparent;
-      border: none;
-      font-size: 20px;
-      color: inherit;
-      cursor: pointer;
-    }
-    /* ========= TOOLBAR (hidden behind “…” button) ========= */
+
+    /* ================== TOOLBAR (HIDDEN BEHIND “…”) ================== */
     .toolbar {
       position: absolute;
-      top: 60px; /* just below the header */
+      top: 60px; /* just below the heading area */
       right: 10px;
       display: none;
       flex-wrap: wrap;
@@ -95,78 +99,62 @@
     .toolbar input[type="file"] {
       display: none;
     }
-    /* ========= EDITOR WRAPPER ========= */
+
+    /* ================== EDITOR WRAPPER ================== */
     .editor-wrapper {
       flex: 1;
-      margin-top: 120px; /* leave space for header */
+      margin-top: 120px; /* space for header */
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-    /* ========= CODE CONTAINERS ========= */
+
+    /* ================== CODE CONTAINERS ================== */
     .code-container {
       display: flex;
       background: #21262d;
       border: 1px solid #30363d;
       border-radius: 6px;
       position: relative;
+      max-height: 100%;
       overflow: hidden;
     }
-    /* Original & Patch containers share same flex settings */
+    /* Top panel (original) & bottom panel (patch) each take 50% by default */
     #original-container,
     #patch-container {
       flex: 1 1 50%;
       min-height: 100px;
       max-height: 100%;
       overflow-y: auto;
-    }
-    .code-content {
-      flex: 1;
       position: relative;
-      margin-left: 40px; /* reserve space for line numbers */
     }
-    textarea {
-      width: 100%;
-      height: 100%;
-      padding: 10px;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 14px;
-      line-height: 21px;
-      background: #21262d;
-      color: #c9d1d9;
-      border: none;
-      box-sizing: border-box;
-      resize: none;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+
+    /* Panel toolbar (copy icon, etc.) pinned at top-right inside each container */
     .panel-toolbar {
-      display: flex;
-      gap: 5px;
-      padding: 5px;
-      background: #161b22;
-      border-bottom: 1px solid #30363d;
-      overflow-x: auto;
-      white-space: nowrap;
-      -webkit-overflow-scrolling: touch;
       position: absolute;
-      top: 0;
-      right: 0;
+      top: 5px;
+      right: 5px;
       z-index: 2;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     .copy-btn {
-      padding: 5px 10px;
-      background: #238636;
-      color: #fff;
+      background: transparent;
       border: none;
-      border-radius: 4px;
-      font-size: 12px;
+      font-size: 14px;
+      color: #c9d1d9;
+      display: flex;
+      align-items: center;
       cursor: pointer;
+      gap: 4px;
     }
     .copy-btn:hover {
-      background: #2ea44f;
+      color: #ffffff;
     }
-    /* ========= LINE NUMBERS ========= */
+
+    /* ================== LINE NUMBERS + TEXTAREA ================== */
     .line-numbers {
       width: 40px;
       background: #161b22;
@@ -183,8 +171,30 @@
       z-index: 1;
       user-select: none;
       white-space: pre;
+      overflow: hidden;
     }
-    /* ========= SPLITTER ========= */
+    .code-content {
+      flex: 1;
+      position: relative;
+      margin-left: 40px; /* same as .line-numbers width */
+    }
+    textarea {
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+      line-height: 21px;
+      background: #21262d;
+      color: #c9d1d9;
+      border: none;
+      box-sizing: border-box;
+      resize: none;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ================== SPLITTER ================== */
     .splitter {
       height: 5px;
       background: #30363d;
@@ -205,18 +215,34 @@
   </style>
 </head>
 <body>
-  <!-- Header with title, search bar, and menu button -->
+  <!-- ===== HEADER ===== -->
   <div class="header-section">
     <h1>Script Manager Tool</h1>
     <div class="search-bar">
-      <input type="text" id="search" placeholder="Search (supports regex)" oninput="searchInScript()">
+      <input
+        type="text"
+        id="search"
+        placeholder="Search (supports regex)"
+        oninput="searchInScript()"
+      />
     </div>
+    <!-- “…” toggles toolbar -->
     <button id="menu-btn">⋮</button>
     <div class="toolbar">
       <label for="file-input-original">Load Original</label>
-      <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
+      <input
+        type="file"
+        id="file-input-original"
+        accept=".txt"
+        onchange="loadFileContent('original')"
+      />
       <label for="file-input-patch">Load Patch</label>
-      <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
+      <input
+        type="file"
+        id="file-input-patch"
+        accept=".txt"
+        onchange="loadFileContent('patch')"
+      />
       <button onclick="compareScripts()">Compare</button>
       <button onclick="applyPatch()">Apply Patch</button>
       <button onclick="mergeScripts()">Merge</button>
@@ -226,49 +252,77 @@
     </div>
   </div>
 
-  <!-- Main Editor Area -->
+  <!-- ===== MAIN EDITOR AREA ===== -->
   <div class="editor-wrapper">
-    <!-- Original Script Panel -->
+    <!-- Original Panel -->
     <div class="code-container" id="original-container">
       <div class="panel-toolbar">
-        <button class="copy-btn" onclick="copyPanel(this)">📋</button>
+        <button class="copy-btn" onclick="copyPanel(this)">
+          <!-- Inline SVG icon for “copy” (two squares) -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+               viewBox="0 0 16 16">
+            <path d="M13 1H4a1 1 0 0 0-1 1v2h1V2h8v8h-1v1h2a1
+                     1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+            <path d="M9 5H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1
+                     1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
+          </svg>
+          <span>Copy</span>
+        </button>
       </div>
       <div class="line-numbers" id="original-lines"></div>
       <div class="code-content">
-        <textarea id="original" placeholder="Original script..." oninput="updateLineNumbers('original')"></textarea>
+        <textarea
+          id="original"
+          placeholder="Original script..."
+          oninput="updateLineNumbers('original')"
+        ></textarea>
       </div>
     </div>
-    <!-- Splitter -->
+
+    <!-- Splitter (vertical) -->
     <div class="splitter">
       <div class="splitter-handle"></div>
     </div>
-    <!-- Patch Script Panel -->
+
+    <!-- Patch Panel -->
     <div class="code-container" id="patch-container">
       <div class="panel-toolbar">
-        <button class="copy-btn" onclick="copyPanel(this)">📋</button>
+        <button class="copy-btn" onclick="copyPanel(this)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+               viewBox="0 0 16 16">
+            <path d="M13 1H4a1 1 0 0 0-1 1v2h1V2h8v8h-1v1h2a1
+                     1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+            <path d="M9 5H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1
+                     1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
+          </svg>
+          <span>Copy</span>
+        </button>
       </div>
       <div class="line-numbers" id="patch-lines"></div>
       <div class="code-content">
-        <textarea id="patch" placeholder="Patch script..." oninput="updateLineNumbers('patch')"></textarea>
+        <textarea
+          id="patch"
+          placeholder="Patch script..."
+          oninput="updateLineNumbers('patch')"
+        ></textarea>
       </div>
     </div>
   </div>
 
   <script>
-    /* Toggle toolbar display when the menu button is clicked */
+    /* ===== Show/hide the toolbar when “…” is clicked ===== */
     document.getElementById("menu-btn").onclick = () => {
       const tb = document.querySelector(".toolbar");
       tb.style.display = tb.style.display === "flex" ? "none" : "flex";
     };
 
-    /* Copy the content of a panel's textarea to the clipboard */
+    /* ===== Copy the content of a panel's textarea ===== */
     function copyPanel(btn) {
       const txt = btn.closest(".code-container").querySelector("textarea").value;
       navigator.clipboard.writeText(txt);
     }
 
-    /* ========= Global variables for splitter and history ========= */
-    let lineHeight = 21;
+    /* ===== Variables for splitter & undo history ===== */
     let history = [];
     let isResizing = false;
     let startY;
@@ -276,13 +330,13 @@
     let startHeightBottom;
     let splitter = null;
 
-    /* Load file content into the specified panel ("original" or "patch") */
+    /* ===== Load file content into “original” or “patch” ===== */
     function loadFileContent(panel) {
       const input = document.getElementById(`file-input-${panel}`);
       const file = input.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         document.getElementById(panel).value = e.target.result;
         updateLineNumbers(panel);
         saveToHistory();
@@ -290,46 +344,45 @@
       reader.readAsText(file);
     }
 
-    /* Update line numbers for the textarea with given id */
+    /* ===== Generate line numbers + sync scroll for a given panel ===== */
     function updateLineNumbers(id) {
       const textarea = document.getElementById(id);
       const linesDiv = document.getElementById(id + "-lines");
       const lines = textarea.value.split("\n");
-      const totalLines = lines.length || 1;
-      let lineNumbers = "";
-      for (let i = 1; i <= totalLines; i++) {
-        lineNumbers += i + "\n";
+      let lineNums = "";
+      for (let i = 1; i <= lines.length; i++) {
+        lineNums += i + "\n";
       }
-      linesDiv.innerHTML = lineNumbers;
-      // Dynamically adjust the height of the line numbers to match the textarea
+      linesDiv.textContent = lineNums;
+
+      // Adjust line-numbers div height to match textarea scrollHeight
       linesDiv.style.height = `${textarea.scrollHeight}px`;
-      // Sync scrolling between textarea and line numbers
-      const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
-      linesDiv.scrollTop = scrollPercentage * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
+
+      // Scroll line-numbers in sync with the textarea
+      const scrollRatio = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
+      linesDiv.scrollTop = scrollRatio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
     }
 
-    /* Save current state to history for undo functionality */
+    /* ===== Keep a small history of states for Undo ===== */
     function saveToHistory() {
       history.push({
         original: document.getElementById("original").value,
-        patch: document.getElementById("patch").value
+        patch: document.getElementById("patch").value,
       });
       if (history.length > 20) history.shift();
     }
-
-    /* Undo the last change */
     function undo() {
       if (history.length > 1) {
         history.pop();
-        const prevState = history[history.length - 1];
-        document.getElementById("original").value = prevState.original || "";
-        document.getElementById("patch").value = prevState.patch || "";
+        const prev = history[history.length - 1];
+        document.getElementById("original").value = prev.original || "";
+        document.getElementById("patch").value = prev.patch || "";
         updateLineNumbers("original");
         updateLineNumbers("patch");
       }
     }
 
-    /* Search for a regex in both panels */
+    /* ===== Searching for text/regex in both textareas ===== */
     function searchInScript() {
       const searchTerm = document.getElementById("search").value;
       const original = document.getElementById("original");
@@ -342,26 +395,24 @@
         console.log("Invalid regex");
       }
     }
-
-    /* Compare scripts: scroll to changes and save history */
     function compareScripts() {
       navigateToChanges();
       saveToHistory();
     }
     function navigateToChanges() {
-      const original = document.getElementById("original");
-      const patch = document.getElementById("patch");
       const searchTerm = document.getElementById("search").value || ".";
       try {
         const regex = new RegExp(searchTerm, "gi");
-        original.scrollTo(0, original.value.search(regex));
-        patch.scrollTo(0, patch.value.search(regex));
+        document.getElementById("original").scrollTo(0,
+          document.getElementById("original").value.search(regex));
+        document.getElementById("patch").scrollTo(0,
+          document.getElementById("patch").value.search(regex));
       } catch (e) {
         console.log("Invalid regex");
       }
     }
 
-    /* Apply patch: replace original text with patch text and clear patch */
+    /* ===== Patch operations ===== */
     function applyPatch() {
       const patchText = document.getElementById("patch").value;
       if (patchText) {
@@ -372,20 +423,16 @@
       updateLineNumbers("patch");
       saveToHistory();
     }
-
-    /* Merge scripts line-by-line */
     function mergeScripts() {
-      const originalLines = document.getElementById("original").value.split("\n");
+      const origLines = document.getElementById("original").value.split("\n");
       const patchLines = document.getElementById("patch").value.split("\n");
-      const merged = originalLines.map((line, i) => patchLines[i] || line).join("\n");
+      const merged = origLines.map((line, i) => patchLines[i] || line).join("\n");
       document.getElementById("original").value = merged;
       document.getElementById("patch").value = "";
       updateLineNumbers("original");
       updateLineNumbers("patch");
       saveToHistory();
     }
-
-    /* Clear content from both panels */
     function clearContent() {
       document.getElementById("original").value = "";
       document.getElementById("patch").value = "";
@@ -394,71 +441,81 @@
       saveToHistory();
     }
 
-    /* Save project to localStorage */
+    /* ===== Save/Load project from localStorage ===== */
     function saveProject() {
       const data = {
         original: document.getElementById("original").value,
-        patch: document.getElementById("patch").value
+        patch: document.getElementById("patch").value,
       };
-      localStorage.setItem('scriptProject', JSON.stringify(data));
+      localStorage.setItem("scriptProject", JSON.stringify(data));
       alert("Project Saved!");
     }
 
-    /* ========= SPLITTER FUNCTIONALITY (Original Implementation) ========= */
+    /* ===== SPLITTER LOGIC (vertical resizing) ===== */
     function initSplitter() {
-      splitter = document.querySelector('.splitter');
-      splitter.addEventListener('mousedown', startResize);
-      splitter.addEventListener('touchstart', startResize, { passive: false });
+      splitter = document.querySelector(".splitter");
+      splitter.addEventListener("mousedown", startResize);
+      splitter.addEventListener("touchstart", startResize, { passive: false });
     }
-    function startResize(event) {
-      event.preventDefault();
+    function startResize(e) {
+      e.preventDefault();
       isResizing = true;
-      startY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
-      const topPanel = document.getElementById('original-container');
-      const bottomPanel = document.getElementById('patch-container');
+      startY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+      const topPanel = document.getElementById("original-container");
+      const bottomPanel = document.getElementById("patch-container");
       startHeightTop = topPanel.offsetHeight;
       startHeightBottom = bottomPanel.offsetHeight;
-      window.addEventListener('mousemove', resizePanels);
-      window.addEventListener('mouseup', stopResize);
-      window.addEventListener('touchmove', resizePanels, { passive: false });
-      window.addEventListener('touchend', stopResize);
+      window.addEventListener("mousemove", resizePanels);
+      window.addEventListener("mouseup", stopResize);
+      window.addEventListener("touchmove", resizePanels, { passive: false });
+      window.addEventListener("touchend", stopResize);
     }
-    function resizePanels(event) {
+    function resizePanels(e) {
       if (!isResizing) return;
-      event.preventDefault();
-      const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
+      e.preventDefault();
+      const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
       const deltaY = clientY - startY;
-      const topPanel = document.getElementById('original-container');
-      const bottomPanel = document.getElementById('patch-container');
+      const topPanel = document.getElementById("original-container");
+      const bottomPanel = document.getElementById("patch-container");
       const totalHeight = topPanel.offsetHeight + bottomPanel.offsetHeight;
       let newTopHeight = Math.max(100, Math.min(startHeightTop + deltaY, totalHeight - 100));
       let newBottomHeight = totalHeight - newTopHeight;
       topPanel.style.flex = `0 0 ${newTopHeight}px`;
       bottomPanel.style.flex = `0 0 ${newBottomHeight}px`;
     }
-    function stopResize(event) {
-      event.preventDefault();
+    function stopResize(e) {
+      e.preventDefault();
       isResizing = false;
-      window.removeEventListener('mousemove', resizePanels);
-      window.removeEventListener('mouseup', stopResize);
-      window.removeEventListener('touchmove', resizePanels);
-      window.removeEventListener('touchend', stopResize);
+      window.removeEventListener("mousemove", resizePanels);
+      window.removeEventListener("mouseup", stopResize);
+      window.removeEventListener("touchmove", resizePanels);
+      window.removeEventListener("touchend", stopResize);
     }
 
-    /* ========= INITIALIZATION ON WINDOW LOAD ========= */
-    window.onload = function() {
-      const saved = localStorage.getItem('scriptProject');
+    /* ===== Initialize on page load ===== */
+    window.onload = function () {
+      // Restore from localStorage if available
+      const saved = localStorage.getItem("scriptProject");
       if (saved) {
         const { original, patch } = JSON.parse(saved);
         document.getElementById("original").value = original || "";
         document.getElementById("patch").value = patch || "";
       }
-      document.querySelectorAll("textarea").forEach(ta => {
-        ta.addEventListener("scroll", () => updateLineNumbers(ta.id));
-        ta.addEventListener("input", () => updateLineNumbers(ta.id));
+      // Update line numbers & sync scrolling on input/scroll
+      ["original", "patch"].forEach((id) => {
+        const ta = document.getElementById(id);
+        ta.addEventListener("input", () => updateLineNumbers(id));
+        ta.addEventListener("scroll", () => {
+          // Keep line-numbers scrolled in sync
+          const linesDiv = document.getElementById(id + "-lines");
+          const ratio =
+            ta.scrollTop / (ta.scrollHeight - ta.clientHeight || 1);
+          linesDiv.scrollTop =
+            ratio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
+        });
+        // Initialize line numbers once
+        updateLineNumbers(id);
       });
-      updateLineNumbers("original");
-      updateLineNumbers("patch");
       initSplitter();
     };
   </script>
