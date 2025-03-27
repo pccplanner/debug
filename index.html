@@ -45,6 +45,7 @@
             flex-direction: column;
             min-height: 0;
             position: relative;
+            overflow: hidden;
         }
 
         .code-container {
@@ -57,11 +58,13 @@
         }
 
         #original-container {
-            flex: 1;
+            flex: 1 1 50%; /* Equal height by default */
+            min-height: 100px;
         }
 
         #patch-container {
-            flex: 1;
+            flex: 1 1 50%; /* Equal height by default */
+            min-height: 100px;
         }
 
         .splitter {
@@ -236,6 +239,7 @@
             }
             linesDiv.innerHTML = lineNumbers;
 
+            // Sync scrolling
             const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
             linesDiv.scrollTop = scrollPercentage * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
         }
@@ -297,17 +301,16 @@
 
             for (let i = 0; i < Math.max(original.length, patch.length); i++) {
                 if (original[i] !== patch[i]) {
-                    originalResult += original[i] ? `<span class="removed">${original[i]}</span>\n` : "\n";
-                    patchResult += patch[i] ? `<span class="highlight">${patch[i]}</span>\n` : "\n";
+                    originalResult += original[i] ? `// Removed: ${original[i]}\n` : "\n";
+                    patchResult += patch[i] ? `// Added: ${patch[i]}\n` : "\n";
                 } else {
                     originalResult += (original[i] || "") + "\n";
                     patchResult += (patch[i] || "") + "\n";
                 }
             }
 
-            // Update textareas with plain text, not HTML
-            document.getElementById("original").value = originalResult.replace(/<[^>]+>/g, '');
-            document.getElementById("patch").value = patchResult.replace(/<[^>]+>/g, '');
+            document.getElementById("original").value = originalResult.trim();
+            document.getElementById("patch").value = patchResult.trim();
             navigateToChanges();
             saveToHistory();
         }
@@ -339,7 +342,7 @@
             const patch = document.getElementById("patch").value.split("\n");
             const merged = original.map((line, i) => patch[i] || line).join("\n");
             document.getElementById("original").value = merged;
-            document.getElementById("patch").value = ""; // Clear patch panel after merge
+            document.getElementById("patch").value = "";
             updateLineNumbers("original");
             updateLineNumbers("patch");
             saveToHistory();
@@ -388,7 +391,7 @@
             const bottomPanel = document.getElementById('patch-container');
             const totalHeight = topPanel.offsetHeight + bottomPanel.offsetHeight;
 
-            let newTopHeight = Math.max(50, Math.min(startHeightTop + deltaY, totalHeight - 50));
+            let newTopHeight = Math.max(100, Math.min(startHeightTop + deltaY, totalHeight - 100));
             let newBottomHeight = totalHeight - newTopHeight;
 
             topPanel.style.flex = `0 0 ${newTopHeight}px`;
