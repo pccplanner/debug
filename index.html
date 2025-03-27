@@ -243,7 +243,7 @@
                 document.getElementById(panel).value = e.target.result;
                 updateLineNumbers(panel);
                 saveToHistory();
-                if (panel === 'original') autoSuggest(); // Only trigger autoSuggest for original panel
+                if (panel === 'original') autoSuggest();
             };
             reader.readAsText(file);
         }
@@ -287,10 +287,8 @@
             const patch = document.getElementById("patch").value;
             if (original && !patch) {
                 const suggestions = generatePatchSuggestions(original);
-                // Only set the placeholder, do not modify the value
                 document.getElementById("patch").placeholder = suggestions.join("\n");
             } else {
-                // Reset placeholder if patch has content
                 document.getElementById("patch").placeholder = "Patch script...";
             }
         }
@@ -317,7 +315,6 @@
         }
 
         function compareScripts() {
-            // Do not modify the content of the panels
             navigateToChanges();
             saveToHistory();
         }
@@ -434,10 +431,14 @@
                 document.getElementById("patch").value = patch || "";
                 updateLineNumbers("original");
                 updateLineNumbers("patch");
+                if (document.getElementById("original").value) autoSuggest();
             }
             document.querySelectorAll("textarea").forEach(ta => {
                 ta.addEventListener("scroll", () => updateLineNumbers(ta.id));
-                ta.addEventListener("input", () => updateLineNumbers(ta.id));
+                ta.addEventListener("input", () => {
+                    updateLineNumbers(ta.id);
+                    if (ta.id === "original") autoSuggest();
+                });
             });
             updateLineNumbers("original");
             updateLineNumbers("patch");
