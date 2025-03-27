@@ -58,12 +58,12 @@
         }
 
         #original-container {
-            flex: 1 1 50%; /* Equal height by default */
+            flex: 1 1 50%;
             min-height: 100px;
         }
 
         #patch-container {
-            flex: 1 1 50%; /* Equal height by default */
+            flex: 1 1 50%;
             min-height: 100px;
         }
 
@@ -239,7 +239,6 @@
             }
             linesDiv.innerHTML = lineNumbers;
 
-            // Sync scrolling
             const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
             linesDiv.scrollTop = scrollPercentage * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
         }
@@ -296,18 +295,8 @@
         function compareScripts() {
             const original = document.getElementById("original").value.split("\n");
             const patch = document.getElementById("patch").value.split("\n");
-            let originalResult = "";
-            let patchResult = "";
-
-            for (let i = 0; i < Math.max(original.length, patch.length); i++) {
-                if (original[i] !== patch[i]) {
-                    originalResult += original[i] ? `// Removed: ${original[i]}\n` : "\n";
-                    patchResult += patch[i] ? `// Added: ${patch[i]}\n` : "\n";
-                } else {
-                    originalResult += (original[i] || "") + "\n";
-                    patchResult += (patch[i] || "") + "\n";
-                }
-            }
+            let originalResult = original.join("\n");
+            let patchResult = patch.join("\n");
 
             document.getElementById("original").value = originalResult.trim();
             document.getElementById("patch").value = patchResult.trim();
@@ -376,6 +365,13 @@
             startHeightTop = topPanel.offsetHeight;
             startHeightBottom = bottomPanel.offsetHeight;
 
+            // Remove previous listeners to avoid duplicates
+            document.removeEventListener('mousemove', resizePanels);
+            document.removeEventListener('mouseup', stopResize);
+            document.removeEventListener('touchmove', resizePanels);
+            document.removeEventListener('touchend', stopResize);
+
+            // Add new listeners
             document.addEventListener('mousemove', resizePanels);
             document.addEventListener('mouseup', stopResize);
             document.addEventListener('touchmove', resizePanels);
@@ -403,10 +399,7 @@
 
         function stopResize() {
             isResizing = false;
-            document.removeEventListener('mousemove', resizePanels);
-            document.removeEventListener('mouseup', stopResize);
-            document.removeEventListener('touchmove', resizePanels);
-            document.removeEventListener('touchend', stopResize);
+            // No need to remove listeners here since we handle it in startResize
         }
 
         window.onload = function() {
