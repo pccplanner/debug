@@ -33,8 +33,10 @@
         }
 
         .header-section {
-            position: sticky;
+            position: fixed; /* Changed to fixed to lock at the top */
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 10;
             background: #0d1117;
         }
@@ -46,6 +48,7 @@
             min-height: 0;
             position: relative;
             overflow: hidden;
+            margin-top: 120px; /* Adjust for the fixed header height */
         }
 
         .code-container {
@@ -105,8 +108,11 @@
             color: #8b949e;
             line-height: 21px;
             border-right: 1px solid #30363d;
-            overflow: hidden;
-            -webkit-overflow-scrolling: touch;
+            position: sticky; /* Lock the line numbers in place */
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1;
             user-select: none;
         }
 
