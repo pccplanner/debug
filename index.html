@@ -3,74 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Script Compare & Patch</title>
+    <title>Script Manager Tool</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 20px;
             margin: 0;
+            padding: 0;
             background: #0d1117;
             color: #c9d1d9;
-            max-width: 100%;
-            overflow-x: hidden;
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
         }
 
         h1 {
-            text-align: center;
             font-size: 24px;
-            color: #c9d1d9;
-            margin-bottom: 20px;
+            text-align: center;
+            margin: 20px;
         }
 
         .container {
             display: flex;
             flex-direction: column;
             gap: 20px;
-            max-width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .container {
-                flex-direction: row;
-            }
-        }
-
-        .input-section {
+            width: 100%;
             flex: 1;
-            min-width: 0;
-        }
-
-        .input-section h2 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #c9d1d9;
-            margin-bottom: 8px;
         }
 
         .code-container {
-            position: relative;
             display: flex;
             background: #21262d;
             border: 1px solid #30363d;
             border-radius: 6px;
-            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+            height: 40vh;
             overflow: hidden;
-            flex: 1;
+            position: relative;
         }
 
         .line-numbers {
+            width: 40px;
             background: #161b22;
             padding: 10px 5px;
             text-align: right;
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
             font-size: 12px;
             color: #8b949e;
-            user-select: none;
-            width: 40px;
-            flex-shrink: 0;
-            line-height: 21px; /* Matches textarea */
+            line-height: 21px;
             border-right: 1px solid #30363d;
-            overflow-y: scroll;
+            overflow-y: auto;
+            white-space: pre;
+            flex-shrink: 0;
         }
 
         .code-content {
@@ -78,222 +60,235 @@
             position: relative;
         }
 
-        textarea, .code-pre {
+        textarea {
             width: 100%;
-            height: 200px;
+            height: 100%;
             padding: 10px;
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
             font-size: 14px;
-            box-sizing: border-box;
-            margin: 0;
-            border: none;
-            line-height: 21px; /* Fixed value to match calculated 14px * 1.5 */
+            line-height: 21px;
             background: #21262d;
             color: #c9d1d9;
-            overflow-x: auto;
+            border: none;
+            box-sizing: border-box;
             overflow-y: auto;
             resize: none;
-            min-height: 100px;
-            min-width: 200px;
+        }
+
+        .highlight {
+            background-color: rgba(39, 174, 96, 0.2); /* Green for added */
+        }
+
+        .removed {
+            background-color: rgba(248, 81, 73, 0.2); /* Red for removed */
+        }
+
+        .modified {
+            background-color: rgba(255, 204, 0, 0.2); /* Yellow for modified */
         }
 
         .buttons {
-            margin: 20px 0;
+            margin: 20px;
             text-align: center;
         }
 
         button {
-            padding: 8px 16px;
+            padding: 12px 24px;
             margin: 0 8px;
             cursor: pointer;
             background: #238636;
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: 600;
             transition: background 0.2s;
+            width: 180px;
         }
 
         button:hover {
             background: #2ea44f;
         }
 
-        #output {
-            margin-top: 20px;
+        .file-input {
+            margin-bottom: 20px;
         }
 
-        #result {
-            background: #21262d;
+        .search-bar {
             padding: 10px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.5em;
+            background: #161b22;
+            color: #8b949e;
+            border: 1px solid #30363d;
+            border-radius: 6px;
         }
 
-        .added { color: #2ea44f; }
-        .removed { color: #f85149; }
-        .conflict { color: #fbbf24; font-weight: bold; }
+        .search-bar input {
+            width: 100%;
+            padding: 5px;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+        }
+
     </style>
 </head>
 <body>
-    <h1>Script Compare & Patch</h1>
+    <h1>Script Manager Tool</h1>
     <div class="container">
-        <div class="input-section">
-            <h2>Original Script</h2>
-            <div class="code-container" id="original-container">
-                <div class="line-numbers" id="original-lines"></div>
-                <div class="code-content">
-                    <textarea id="original" placeholder="Paste your original script here" wrap="off" oninput="updateLineNumbers('original')" onscroll="syncScroll('original')" onmousedown="startResize(event, 'original')" ontouchstart="startResize(event, 'original')"></textarea>
-                </div>
-            </div>
+        <!-- File Import Section -->
+        <div class="file-input">
+            <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
+            <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
         </div>
-        <div class="input-section">
-            <h2>Patch Script</h2>
-            <div class="code-container" id="patch-container">
-                <div class="line-numbers" id="patch-lines"></div>
-                <div class="code-content">
-                    <textarea id="patch" placeholder="Paste your patch script here" wrap="off" oninput="updateLineNumbers('patch')" onscroll="syncScroll('patch')" onmousedown="startResize(event, 'patch')" ontouchstart="startResize(event, 'patch')"></textarea>
-                </div>
-            </div>
+
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Search functions or keywords" oninput="searchInScript()">
         </div>
-    </div>
-    <div class="buttons">
-        <button onclick="compareScripts()">Compare</button>
-        <button onclick="applyPatch()">Apply Patch</button>
-        <button onclick="mergeScripts()">Merge</button>
-    </div>
-    <div id="output">
-        <h2>Result</h2>
-        <div class="code-container" id="result-container">
-            <div class="line-numbers" id="result-lines"></div>
+
+        <!-- Code Container for Original Script -->
+        <div class="code-container" id="original-container">
+            <div class="line-numbers" id="original-lines"></div>
             <div class="code-content">
-                <pre id="result" class="code-pre"></pre>
+                <textarea id="original" placeholder="Paste your original script here..." oninput="updateLineNumbers('original')"></textarea>
             </div>
         </div>
+
+        <!-- Code Container for Patch Script -->
+        <div class="code-container" id="patch-container">
+            <div class="line-numbers" id="patch-lines"></div>
+            <div class="code-content">
+                <textarea id="patch" placeholder="Paste your patch script here..." oninput="updateLineNumbers('patch')"></textarea>
+            </div>
+        </div>
+
+        <!-- Buttons for Functions -->
+        <div class="buttons">
+            <button onclick="compareScripts()">Compare</button>
+            <button onclick="applyPatch()">Apply Patch</button>
+            <button onclick="mergeScripts()">Merge</button>
+            <button onclick="clearContent()">Clear Content</button>
+            <button onclick="saveProject()">Save Project</button>
+        </div>
     </div>
+
     <script>
-        let isResizing = false;
-        let currentResizePanel = '';
-        let startX, startY;
         let lineHeight = 21;
 
-        function startResize(event, panel) {
-            isResizing = true;
-            currentResizePanel = panel;
+        // Load file content into respective panel (Original/Patch)
+        function loadFileContent(panel) {
+            const input = document.getElementById(`file-input-${panel}`);
+            const file = input.files[0];
+            const reader = new FileReader();
 
-            if (event.type === 'mousedown') {
-                startX = event.clientX;
-                startY = event.clientY;
-                document.addEventListener('mousemove', resizePanel);
-                document.addEventListener('mouseup', stopResize);
-            } else if (event.type === 'touchstart') {
-                const touch = event.touches[0];
-                startX = touch.clientX;
-                startY = touch.clientY;
-                document.addEventListener('touchmove', resizePanel);
-                document.addEventListener('touchend', stopResize);
-            }
-            event.preventDefault();
+            reader.onload = function (e) {
+                document.getElementById(panel).value = e.target.result;
+                updateLineNumbers(panel);
+                localStorage.setItem(panel + 'Script', e.target.result);  // Save script to local storage
+            };
+
+            reader.readAsText(file);
         }
 
-        function resizePanel(event) {
-            if (!isResizing) return;
-
-            let clientX, clientY;
-            if (event.type === 'mousemove') {
-                clientX = event.clientX;
-                clientY = event.clientY;
-            } else if (event.type === 'touchmove') {
-                const touch = event.touches[0];
-                clientX = touch.clientX;
-                clientY = touch.clientY;
-            }
-
-            const panel = document.getElementById(currentResizePanel);
-            const rect = panel.getBoundingClientRect();
-            const newWidth = Math.max(200, rect.width + (clientX - startX));
-            const newHeight = Math.max(100, rect.height + (clientY - startY));
-
-            panel.style.width = newWidth + 'px';
-            panel.style.height = newHeight + 'px';
-            startX = clientX;
-            startY = clientY;
-        }
-
-        function stopResize(event) {
-            isResizing = false;
-            if (event.type === 'mouseup') {
-                document.removeEventListener('mousemove', resizePanel);
-                document.removeEventListener('mouseup', stopResize);
-            } else if (event.type === 'touchend') {
-                document.removeEventListener('touchmove', resizePanel);
-                document.removeEventListener('touchend', stopResize);
-            }
-        }
-
+        // Update line numbers dynamically based on script content
         function updateLineNumbers(id) {
-            const textarea = document.getElementById(id);
+            const scriptContent = document.getElementById(id);
             const linesDiv = document.getElementById(id + '-lines');
-            const lines = textarea.value.split('\n').length;
-
+            const totalLines = scriptContent.value.split("\n").length;
             linesDiv.innerHTML = '';
-            for (let i = 1; i <= lines; i++) {
-                linesDiv.innerHTML += i + '\n';
+            for (let i = 1; i <= totalLines; i++) {
+                linesDiv.innerHTML += i + "\n";
             }
         }
 
-        function syncScroll(id) {
-            const textarea = document.getElementById(id);
-            const linesDiv = document.getElementById(id + '-lines');
-            linesDiv.scrollTop = textarea.scrollTop;
+        // Highlight changes after comparison
+        function highlightChanges(original, patch) {
+            let highlightedContent = "";
+            const changesList = document.getElementById("change-list");
+
+            for (let i = 0; i < Math.max(original.length, patch.length); i++) {
+                if (original[i] !== patch[i]) {
+                    if (patch[i]) {
+                        highlightedContent += `<span class="highlight">${patch[i]}</span>\n`;
+                    }
+                    if (original[i]) {
+                        highlightedContent += `<span class="removed">${original[i]}</span>\n`;
+                    }
+                } else {
+                    highlightedContent += `${original[i] || ''}\n`;
+                }
+            }
+
+            document.getElementById("original").value = highlightedContent;
         }
 
+        // Smoothly navigate to changed lines
+        function scrollToLine(lineIndex) {
+            const scriptContent = document.getElementById("original");
+            const lines = scriptContent.value.split("\n");
+            const scrollPosition = lineIndex * lineHeight;
+            scriptContent.scrollTop = scrollPosition;
+        }
+
+        // Compare Original and Patch script
         function compareScripts() {
-            const original = document.getElementById('original').value.split('\n');
-            const patch = document.getElementById('patch').value.split('\n');
-            const result = document.getElementById('result');
-            
-            let diff = [];
-            for (let i = 0; i < Math.max(original.length, patch.length); i++) {
-                if (original[i] === patch[i]) {
-                    diff.push(`  ${original[i] || ''}`);
-                } else {
-                    if (original[i]) diff.push(`<span class="removed">- ${original[i]}</span>`);
-                    if (patch[i]) diff.push(`<span class="added">+ ${patch[i]}</span>`);
-                }
-            }
-            
-            result.innerHTML = diff.join('\n');
+            const original = document.getElementById("original").value.split("\n");
+            const patch = document.getElementById("patch").value.split("\n");
+
+            highlightChanges(original, patch);
+            navigateToChanges(original, patch);  // Smoothly scroll to changes
         }
 
+        // Smoothly scroll to the first change
+        function navigateToChanges(original, patch) {
+            const changes = document.querySelectorAll('.highlight, .removed');
+            if (changes.length > 0) {
+                changes[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Apply the Patch to the Original script
         function applyPatch() {
-            const patch = document.getElementById('patch').value;
-            document.getElementById('original').value = patch;
-            document.getElementById('result').innerHTML = 'Patch applied to original script!';
+            alert("Patch apply functionality to be implemented.");
         }
 
+        // Merge the Original and Patch scripts
         function mergeScripts() {
-            const original = document.getElementById('original').value.split('\n');
-            const patch = document.getElementById('patch').value.split('\n');
-            const result = document.getElementById('result');
-            
-            let merged = [];
-            for (let i = 0; i < Math.max(original.length, patch.length); i++) {
-                if (original[i] === patch[i]) {
-                    merged.push(original[i] || '');
-                } else {
-                    if (original[i]) merged.push(`<<<<<<< ORIGINAL\n${original[i]}`);
-                    if (patch[i]) merged.push(`${patch[i]}\n>>>>>>> PATCH`);
-                }
-            }
-            
-            result.innerHTML = merged.join('\n');
+            alert("Merge functionality to be implemented.");
         }
 
+        // Clear all content in the panels
+        function clearContent() {
+            document.getElementById("original").value = "";
+            document.getElementById("patch").value = "";
+            document.getElementById("original-lines").innerHTML = "";
+            document.getElementById("patch-lines").innerHTML = "";
+        }
+
+        // Save the current project (Original and Patch scripts) to local storage
+        function saveProject() {
+            localStorage.setItem('originalScript', document.getElementById("original").value);
+            localStorage.setItem('patchScript', document.getElementById("patch").value);
+            alert("Project Saved!");
+        }
+
+        // Initialize the script editor and load saved project if exists
         window.onload = function() {
-            updateLineNumbers('original');
-            updateLineNumbers('patch');
+            if (localStorage.getItem('originalScript')) {
+                document.getElementById("original").value = localStorage.getItem('originalScript');
+                updateLineNumbers('original');
+            }
+
+            if (localStorage.getItem('patchScript')) {
+                document.getElementById("patch").value = localStorage.getItem('patchScript');
+                updateLineNumbers('patch');
+            }
+        };
+
+        // Save content to Local Storage on window close
+        window.onbeforeunload = function() {
+            localStorage.setItem('originalScript', document.getElementById("original").value);
+            localStorage.setItem('patchScript', document.getElementById("patch").value);
         };
     </script>
 </body>
