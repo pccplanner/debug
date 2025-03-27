@@ -359,8 +359,10 @@
       linesDiv.style.height = `${textarea.scrollHeight}px`;
 
       // Scroll line-numbers in sync with the textarea
-      const scrollRatio = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
-      linesDiv.scrollTop = scrollRatio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
+      const scrollRatio =
+        textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
+      linesDiv.scrollTop =
+        scrollRatio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
     }
 
     /* ===== Keep a small history of states for Undo ===== */
@@ -403,10 +405,10 @@
       const searchTerm = document.getElementById("search").value || ".";
       try {
         const regex = new RegExp(searchTerm, "gi");
-        document.getElementById("original").scrollTo(0,
-          document.getElementById("original").value.search(regex));
-        document.getElementById("patch").scrollTo(0,
-          document.getElementById("patch").value.search(regex));
+        const original = document.getElementById("original");
+        const patch = document.getElementById("patch");
+        original.scrollTo(0, original.value.search(regex));
+        patch.scrollTo(0, patch.value.search(regex));
       } catch (e) {
         console.log("Invalid regex");
       }
@@ -492,6 +494,14 @@
       window.removeEventListener("touchend", stopResize);
     }
 
+    /* ===== PASTE-FRIENDLY FIX: On some devices, “input” might not fire after paste ===== */
+    function handlePaste(id) {
+      // Tiny delay to let the paste finish
+      setTimeout(() => {
+        updateLineNumbers(id);
+      }, 50);
+    }
+
     /* ===== Initialize on page load ===== */
     window.onload = function () {
       // Restore from localStorage if available
@@ -501,21 +511,28 @@
         document.getElementById("original").value = original || "";
         document.getElementById("patch").value = patch || "";
       }
-      // Update line numbers & sync scrolling on input/scroll
+
+      // For both textareas, watch for input/scroll/paste
       ["original", "patch"].forEach((id) => {
         const ta = document.getElementById(id);
+
+        // On typing
         ta.addEventListener("input", () => updateLineNumbers(id));
+
+        // On scroll (sync line numbers)
         ta.addEventListener("scroll", () => {
-          // Keep line-numbers scrolled in sync
           const linesDiv = document.getElementById(id + "-lines");
-          const ratio =
-            ta.scrollTop / (ta.scrollHeight - ta.clientHeight || 1);
-          linesDiv.scrollTop =
-            ratio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
+          const ratio = ta.scrollTop / (ta.scrollHeight - ta.clientHeight || 1);
+          linesDiv.scrollTop = ratio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
         });
-        // Initialize line numbers once
+
+        // On paste (extra safety for iOS)
+        ta.addEventListener("paste", () => handlePaste(id));
+
+        // Initialize line numbers
         updateLineNumbers(id);
       });
+
       initSplitter();
     };
   </script>
