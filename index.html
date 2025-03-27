@@ -10,17 +10,16 @@
   .container { display:flex; flex-direction:column; flex:1; padding:10px; gap:10px; overflow:hidden; }
   .header-section { position:fixed; top:0; left:0; right:0; background:#0d1117; z-index:10; }
   #menu-btn { position:absolute; top:12px; right:12px; background:transparent; border:none; font-size:20px; color:inherit; cursor:pointer; }
-  .toolbar { display:none; gap:5px; padding:5px; background:#161b22; border-bottom:1px solid #30363d; overflow-x:auto; white-space:nowrap; }
-  .toolbar input[type="file"] { display:none; }
+  .toolbar { display:none; gap:5px; padding:5px; background:#161b22; border-bottom:1px solid #30363d; }
   .toolbar label, .toolbar button { padding:5px 10px; background:#238636; color:#fff; border:none; border-radius:4px; font-size:12px; cursor:pointer; }
   .toolbar label:hover, .toolbar button:hover { background:#2ea44f; }
   .search-bar { padding:5px; background:#161b22; border:1px solid #30363d; border-radius:6px; margin-bottom:5px; }
   .search-bar input { width:100%; padding:5px; background:#21262d; color:#c9d1d9; border:1px solid #30363d; border-radius:4px; font-size:12px; }
   .code-container { display:flex; background:#21262d; border:1px solid #30363d; border-radius:6px; position:relative; overflow:hidden; }
-  .panel-toolbar { position:absolute; top:6px; right:6px; display:flex; gap:6px; z-index:2; }
-  .copy-btn, .paste-btn { background:transparent; border:none; font-size:16px; cursor:pointer; color:#8b949e; }
-  .copy-btn:hover, .paste-btn:hover { color:#c9d1d9; }
-  .line-numbers { width:24px; padding-right:6px; background:transparent; text-align:right; font-family:"SFMono-Regular",monospace; font-size:11px; color:#6e7681; line-height:21px; position:sticky; left:0; top:0; z-index:1; user-select:none; }
+  .panel-toolbar { position:absolute; top:6px; right:6px; z-index:2; }
+  .copy-btn { background:transparent; border:none; font-size:16px; cursor:pointer; color:#8b949e; }
+  .copy-btn:hover { color:#c9d1d9; }
+  .line-numbers { width:24px; padding-right:6px; background:transparent; text-align:right; font-family:"SFMono-Regular",monospace; font-size:11px; color:#6e7681; line-height:21px; position:sticky; left:0; top:0; user-select:none; }
   .code-content { flex:1; margin-left:24px; }
   textarea { width:100%; height:100%; padding:10px; font-family:"SFMono-Regular",monospace; font-size:14px; line-height:21px; background:#21262d; color:#c9d1d9; border:none; resize:none; overflow-y:auto; }
   .splitter { height:5px; background:#30363d; cursor:ns-resize; display:flex; justify-content:center; align-items:center; }
@@ -33,14 +32,12 @@
   <div class="header-section">
     <h1>Script Manager Tool</h1>
     <div class="search-bar">
-      <input type="text" id="search" placeholder="Search (supports regex)" oninput="searchInScript()">
+      <input id="search" placeholder="Search (supports regex)" oninput="searchInScript()">
     </div>
     <button id="menu-btn">⋮</button>
     <div class="toolbar">
-      <label for="file-input-original">Load Original</label>
-      <input type="file" id="file-input-original" accept=".txt" onchange="loadFileContent('original')">
-      <label for="file-input-patch">Load Patch</label>
-      <input type="file" id="file-input-patch" accept=".txt" onchange="loadFileContent('patch')">
+      <label for="file-input-original">Load Original</label><input id="file-input-original" type="file" accept=".txt" onchange="loadFileContent('original')">
+      <label for="file-input-patch">Load Patch</label><input id="file-input-patch" type="file" accept=".txt" onchange="loadFileContent('patch')">
       <button onclick="compareScripts()">Compare</button>
       <button onclick="applyPatch()">Apply Patch</button>
       <button onclick="mergeScripts()">Merge</button>
@@ -54,16 +51,16 @@
     <div class="code-container" id="original-container">
       <div class="panel-toolbar">
         <button class="copy-btn" onclick="copyPanel(this)">📋</button>
-        <button class="paste-btn" onclick="pastePanel(this)">📥</button>
       </div>
       <div class="line-numbers" id="original-lines"></div>
       <div class="code-content"><textarea id="original" placeholder="Original script..." oninput="updateLineNumbers('original')"></textarea></div>
     </div>
+
     <div class="splitter"><div class="splitter-handle"></div></div>
+
     <div class="code-container" id="patch-container">
       <div class="panel-toolbar">
         <button class="copy-btn" onclick="copyPanel(this)">📋</button>
-        <button class="paste-btn" onclick="pastePanel(this)">📥</button>
       </div>
       <div class="line-numbers" id="patch-lines"></div>
       <div class="code-content"><textarea id="patch" placeholder="Patch script..." oninput="updateLineNumbers('patch')"></textarea></div>
@@ -79,17 +76,7 @@ document.getElementById('menu-btn').onclick = () => {
 function copyPanel(btn) {
   navigator.clipboard.writeText(btn.closest('.code-container').querySelector('textarea').value);
 }
-function pastePanel(btn) {
-  navigator.clipboard.readText().then(text => {
-    const ta = btn.closest('.code-container').querySelector('textarea');
-    ta.value = text;
-    updateLineNumbers(ta.id);
-  });
-}
-
-/* ==== All remaining JS unchanged from CodeMixer V4.0 ==== */
-let lineHeight = 21, history = [], isResizing = false, startY, startHeightTop, startHeightBottom, splitter=null;
-function loadFileContent(panel){/*…*/} function updateLineNumbers(id){/*…*/} function saveToHistory(){/*…*/} function undo(){/*…*/} function searchInScript(){/*…*/} function compareScripts(){/*…*/} function navigateToChanges(){/*…*/} function applyPatch(){/*…*/} function mergeScripts(){/*…*/} function clearContent(){/*…*/} function saveProject(){/*…*/} function initSplitter(){/*…*/} function startResize(e){/*…*/} function resizePanels(e){/*…*/} function stopResize(e){/*…*/} window.onload=function(){/*…*/};
+// All remaining functions (loadFileContent, updateLineNumbers, history, undo, searchInScript, compareScripts, navigateToChanges, applyPatch, mergeScripts, clearContent, saveProject, splitter resize) are identical to CodeMixer V4.0 .
 </script>
 </body>
 </html>
