@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Load diff_match_patch library from CDN for advanced diff calculation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+  <title>Script Manager Tool with Preview</title>
+  <!-- Optionally load diff_match_patch for advanced word-level diffs:
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script> -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Advanced Script Manager Tool</title>
   <style>
-    /* ================== GLOBAL STYLES ================== */
+    /* ================== GLOBAL STYLES (from V6.1) ================== */
     body {
       margin: 0;
       padding: 0;
@@ -24,12 +24,11 @@
       text-align: center;
       margin: 10px 0;
     }
-    /* ================== HEADER SECTION ================== */
     .header-section {
       position: fixed;
       top: 0; left: 0; right: 0;
       background: #0d1117;
-      z-index: 100;
+      z-index: 10;
       padding: 10px;
       border-bottom: 1px solid #30363d;
       display: flex;
@@ -42,11 +41,10 @@
       right: 10px;
       background: transparent;
       border: none;
-      font-size: 24px;
-      color: #c9d1d9;
+      font-size: 20px;
+      color: inherit;
       cursor: pointer;
     }
-    /* ================== SEARCH BAR ================== */
     .search-bar {
       width: 100%;
       max-width: 600px;
@@ -60,35 +58,34 @@
     }
     .search-bar input {
       width: 100%;
-      padding: 8px;
+      padding: 5px;
       background: #21262d;
       color: #c9d1d9;
       border: 1px solid #30363d;
       border-radius: 4px;
-      font-size: 14px;
+      font-size: 12px;
     }
-    /* ================== TOOLBAR (HIDDEN BEHIND “…”) ================== */
     .toolbar {
       position: absolute;
       top: 60px;
       right: 10px;
       display: none;
       flex-wrap: wrap;
-      gap: 8px;
-      padding: 8px;
+      gap: 5px;
+      padding: 5px;
       background: #161b22;
       border: 1px solid #30363d;
       border-radius: 6px;
-      z-index: 200;
+      z-index: 999;
     }
     .toolbar label,
     .toolbar button {
-      padding: 8px 12px;
+      padding: 5px 10px;
       background: #238636;
       color: #fff;
       border: none;
-      border-radius: 6px;
-      font-size: 14px;
+      border-radius: 4px;
+      font-size: 12px;
       cursor: pointer;
     }
     .toolbar label:hover,
@@ -98,42 +95,13 @@
     .toolbar input[type="file"] {
       display: none;
     }
-    /* ================== PROJECT MANAGEMENT (Custom Project Folder) ================== */
-    .project-manager {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .project-manager input {
-      padding: 8px;
-      font-size: 14px;
-      border: 1px solid #30363d;
-      border-radius: 4px;
-      background: #21262d;
-      color: #c9d1d9;
-    }
-    .project-manager button {
-      padding: 8px 12px;
-      background: #238636;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .project-manager button:hover {
-      background: #2ea44f;
-    }
-    /* ================== EDITOR WRAPPER ================== */
     .editor-wrapper {
       flex: 1;
-      margin-top: 120px; /* leave space for header */
+      margin-top: 120px; /* space for header */
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-    /* ================== CODE CONTAINERS ================== */
     .code-container {
       display: flex;
       background: #21262d;
@@ -143,15 +111,14 @@
       max-height: 100%;
       overflow: hidden;
     }
-    /* Panels: Original and Patch take 50% each by default */
     #original-container,
     #patch-container {
       flex: 1 1 50%;
       min-height: 100px;
+      max-height: 100%;
       overflow-y: auto;
       position: relative;
     }
-    /* ================== PANEL TOOLBAR (Copy & Extra Buttons) ================== */
     .panel-toolbar {
       position: absolute;
       top: 5px;
@@ -162,20 +129,19 @@
       align-items: center;
       gap: 5px;
     }
-    .copy-btn, .copyall-btn {
+    .copy-btn {
       background: transparent;
       border: none;
-      font-size: 16px;
+      font-size: 14px;
       color: #c9d1d9;
-      cursor: pointer;
       display: flex;
       align-items: center;
+      cursor: pointer;
       gap: 4px;
     }
-    .copy-btn:hover, .copyall-btn:hover {
-      color: #fff;
+    .copy-btn:hover {
+      color: #ffffff;
     }
-    /* ================== LINE NUMBERS & TEXTAREA ================== */
     .line-numbers {
       width: 40px;
       background: #161b22;
@@ -197,7 +163,7 @@
     .code-content {
       flex: 1;
       position: relative;
-      margin-left: 40px;
+      margin-left: 40px; /* same as .line-numbers width */
     }
     textarea {
       width: 100%;
@@ -214,7 +180,6 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
-    /* ================== SPLITTER ================== */
     .splitter {
       height: 5px;
       background: #30363d;
@@ -232,16 +197,28 @@
     .splitter:hover .splitter-handle {
       background: #c9d1d9;
     }
-    /* ================== ADVANCED DIFF & CHANGE LIST ================== */
-    /* Diff View Overlay */
+
+    /* ======== NEW: DIFF VIEW & CHANGE LIST FOR PREVIEW MERGE/PATCH ======== */
     #diff-view {
       position: fixed;
-      top: 80px;
+      top: 80px; /* below header */
       right: 0;
       width: 40%;
       height: calc(100% - 80px);
       background: #0d1117;
       border-left: 2px solid #30363d;
+      overflow-y: auto;
+      padding: 10px;
+      display: none;
+      z-index: 300;
+    }
+    #change-list {
+      position: fixed;
+      top: 80px;
+      left: 0;
+      width: 15%;
+      height: calc(100% - 80px);
+      background: #161b22;
       overflow-y: auto;
       padding: 10px;
       display: none;
@@ -259,54 +236,30 @@
     .diff-line.removed {
       background: rgba(248,81,73,0.2);
     }
-    .diff-line.modified {
-      background: rgba(255,204,0,0.2);
-    }
-    /* Change List Sidebar */
-    #change-list {
-      position: fixed;
-      top: 80px;
-      left: 0;
-      width: 15%;
-      height: calc(100% - 80px);
-      background: #161b22;
-      overflow-y: auto;
-      padding: 10px;
-      display: none;
-      z-index: 300;
-    }
     .change-item {
-      padding: 4px 6px;
-      margin: 4px 0;
+      margin: 5px 0;
       background: #21262d;
       border: 1px solid #30363d;
       border-radius: 4px;
+      padding: 5px;
       cursor: pointer;
     }
     .change-item:hover {
       background: #2ea44f;
     }
-    /* ================== TOOLTIP FOR CHANGE PREVIEW ================== */
-    .tooltip {
-      position: absolute;
-      background: #21262d;
-      border: 1px solid #30363d;
-      border-radius: 4px;
-      padding: 4px 8px;
-      font-size: 12px;
-      color: #c9d1d9;
-      z-index: 400;
-      white-space: pre-wrap;
-      display: none;
-    }
   </style>
 </head>
 <body>
-  <!-- ================== HEADER SECTION ================== -->
+  <!-- ===== HEADER ===== -->
   <div class="header-section">
     <h1>Script Manager Tool</h1>
     <div class="search-bar">
-      <input type="text" id="search" placeholder="Search (supports regex)" oninput="searchInScript()">
+      <input
+        type="text"
+        id="search"
+        placeholder="Search (supports regex)"
+        oninput="searchInScript()"
+      />
     </div>
     <!-- “…” toggles toolbar -->
     <button id="menu-btn">⋮</button>
@@ -321,24 +274,19 @@
       <button onclick="clearContent()">Clear</button>
       <button onclick="saveProject()">Save</button>
       <button onclick="undo()">Undo</button>
-    </div>
-    <!-- Project Manager: Save as Project & List -->
-    <div class="project-manager">
-      <input type="text" id="project-name" placeholder="Project Name">
-      <button onclick="saveProjectAs()">Save as Project</button>
-      <select id="project-list" onchange="loadProjectByName(this.value)">
-        <option value="">-- Select Project --</option>
-      </select>
+      <!-- New “Preview Merge” / “Preview Patch” buttons -->
+      <button onclick="previewMerge()">Preview Merge</button>
+      <button onclick="previewPatch()">Preview Patch</button>
     </div>
   </div>
 
-  <!-- ================== MAIN EDITOR AREA ================== -->
+  <!-- ===== MAIN EDITOR AREA ===== -->
   <div class="editor-wrapper">
     <!-- Original Panel -->
     <div class="code-container" id="original-container">
       <div class="panel-toolbar">
         <button class="copy-btn" onclick="copyPanel(this)">
-          <!-- SVG icon for copy -->
+          <!-- Inline SVG icon for “copy” (two squares) -->
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                viewBox="0 0 16 16">
             <path d="M13 1H4a1 1 0 0 0-1 1v2h1V2h8v8h-1v1h2a1
@@ -348,15 +296,18 @@
           </svg>
           <span>Copy</span>
         </button>
-        <button class="copyall-btn" onclick="copyPatchToOriginal()">Copy from Patch</button>
       </div>
       <div class="line-numbers" id="original-lines"></div>
       <div class="code-content">
-        <textarea id="original" placeholder="Paste your original script here..." oninput="updateLineNumbers('original')"></textarea>
+        <textarea
+          id="original"
+          placeholder="Original script..."
+          oninput="updateLineNumbers('original')"
+        ></textarea>
       </div>
     </div>
 
-    <!-- Splitter -->
+    <!-- Splitter (vertical) -->
     <div class="splitter">
       <div class="splitter-handle"></div>
     </div>
@@ -377,42 +328,45 @@
       </div>
       <div class="line-numbers" id="patch-lines"></div>
       <div class="code-content">
-        <textarea id="patch" placeholder="Paste your patch script here..." oninput="updateLineNumbers('patch')"></textarea>
+        <textarea
+          id="patch"
+          placeholder="Patch script..."
+          oninput="updateLineNumbers('patch')"
+        ></textarea>
       </div>
     </div>
   </div>
 
-  <!-- ================== ADVANCED DIFF VIEW & CHANGE LIST ================== -->
+  <!-- ====== DIFF VIEW + CHANGE LIST (for preview) ====== -->
   <div id="diff-view"></div>
   <div id="change-list"></div>
-  <!-- Tooltip for change preview -->
-  <div id="tooltip" class="tooltip"></div>
 
   <script>
-    /* ---------- Toolbar Toggle ---------- */
+    /* ===== Show/hide the toolbar when “…” is clicked ===== */
     document.getElementById("menu-btn").onclick = () => {
       const tb = document.querySelector(".toolbar");
       tb.style.display = tb.style.display === "flex" ? "none" : "flex";
     };
 
-    /* ---------- Copy Functions ---------- */
+    /* ===== Copy the content of a panel's textarea ===== */
     function copyPanel(btn) {
       const txt = btn.closest(".code-container").querySelector("textarea").value;
       navigator.clipboard.writeText(txt);
     }
-    function copyPatchToOriginal() {
-      const patchText = document.getElementById("patch").value;
-      document.getElementById("original").value = patchText;
-      updateLineNumbers("original");
-    }
 
-    /* ---------- File Loading ---------- */
+    /* ===== Variables for splitter & undo history ===== */
+    let history = [];
+    let isResizing = false;
+    let startY, startHeightTop, startHeightBottom;
+    let splitter = null;
+
+    /* ===== Load file content into “original” or “patch” ===== */
     function loadFileContent(panel) {
       const input = document.getElementById(`file-input-${panel}`);
       const file = input.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         document.getElementById(panel).value = e.target.result;
         updateLineNumbers(panel);
         saveToHistory();
@@ -420,7 +374,7 @@
       reader.readAsText(file);
     }
 
-    /* ---------- Line Numbers & Scroll Sync ---------- */
+    /* ===== Generate line numbers + sync scroll for a given panel ===== */
     function updateLineNumbers(id) {
       const textarea = document.getElementById(id);
       const linesDiv = document.getElementById(id + "-lines");
@@ -430,13 +384,16 @@
         lineNums += i + "\n";
       }
       linesDiv.textContent = lineNums;
+      // Adjust line-numbers div height to match textarea scrollHeight
       linesDiv.style.height = `${textarea.scrollHeight}px`;
-      const scrollRatio = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
-      linesDiv.scrollTop = scrollRatio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
+      // Scroll line-numbers in sync with the textarea
+      const scrollRatio =
+        textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
+      linesDiv.scrollTop =
+        scrollRatio * (linesDiv.scrollHeight - linesDiv.clientHeight || 1);
     }
 
-    /* ---------- Undo History ---------- */
-    let history = [];
+    /* ===== Keep a small history of states for Undo ===== */
     function saveToHistory() {
       history.push({
         original: document.getElementById("original").value,
@@ -455,22 +412,38 @@
       }
     }
 
-    /* ---------- Search Functionality ---------- */
+    /* ===== Searching for text/regex in both textareas ===== */
     function searchInScript() {
-      const term = document.getElementById("search").value;
-      const origText = document.getElementById("original").value;
-      const index = origText.search(new RegExp(term, "i"));
-      if (index >= 0) {
-        const line = origText.substring(0, index).split("\n").length;
-        scrollToLine(line);
+      const searchTerm = document.getElementById("search").value;
+      const original = document.getElementById("original");
+      const patch = document.getElementById("patch");
+      try {
+        const regex = new RegExp(searchTerm, "gi");
+        original.scrollTo(0, original.value.search(regex));
+        patch.scrollTo(0, patch.value.search(regex));
+      } catch (e) {
+        console.log("Invalid regex");
       }
     }
-    function scrollToLine(lineIndex) {
-      const textarea = document.getElementById("original");
-      textarea.scrollTop = (lineIndex - 1) * 21;
+    /* ===== Compare scripts (basic) ===== */
+    function compareScripts() {
+      navigateToChanges();
+      saveToHistory();
+    }
+    function navigateToChanges() {
+      const searchTerm = document.getElementById("search").value || ".";
+      try {
+        const regex = new RegExp(searchTerm, "gi");
+        const original = document.getElementById("original");
+        const patch = document.getElementById("patch");
+        original.scrollTo(0, original.value.search(regex));
+        patch.scrollTo(0, patch.value.search(regex));
+      } catch (e) {
+        console.log("Invalid regex");
+      }
     }
 
-    /* ---------- Patch & Merge Functions ---------- */
+    /* ===== Patch / Merge Functions ===== */
     function applyPatch() {
       const patchText = document.getElementById("patch").value;
       if (patchText) {
@@ -509,8 +482,7 @@
       alert("Project Saved!");
     }
 
-    /* ---------- Splitter Functionality ---------- */
-    let isResizing = false, startY, startHeightTop, startHeightBottom, splitter = null;
+    /* ===== SPLITTER LOGIC (vertical resizing) ===== */
     function initSplitter() {
       splitter = document.querySelector(".splitter");
       splitter.addEventListener("mousedown", startResize);
@@ -551,236 +523,24 @@
       window.removeEventListener("touchend", stopResize);
     }
 
-    /* ---------- Paste-Friendly Fix ---------- */
+    /* ===== PASTE-FRIENDLY FIX: On some iOS devices, “input” might not fire after paste ===== */
     function handlePaste(id) {
       setTimeout(() => {
         updateLineNumbers(id);
       }, 50);
     }
 
-    /* ---------- Advanced Diff Calculation Using diff_match_patch ---------- */
-    function computeDiff() {
-      const dmp = new diff_match_patch();
-      const origText = document.getElementById("original").value;
-      const patchText = document.getElementById("patch").value;
-      const diffs = dmp.diff_main(origText, patchText);
-      dmp.diff_cleanupSemantic(diffs);
-      return diffs;
-    }
-    function showDiff() {
-      const diffs = computeDiff();
-      const diffView = document.getElementById("diff-view");
-      diffView.innerHTML = "";
-      let lineNum = 1;
-      diffs.forEach((diff, index) => {
-        const span = document.createElement("div");
-        span.className = "diff-line";
-        // diff[0]: -1 (delete), 0 (equal), 1 (insert)
-        if (diff[0] === 1) {
-          span.classList.add("added");
-          span.textContent = "+ " + diff[1];
-        } else if (diff[0] === -1) {
-          span.classList.add("removed");
-          span.textContent = "- " + diff[1];
-        } else {
-          span.textContent = "  " + diff[1];
-        }
-        // Set an id for navigation (approximate line number)
-        span.id = "diff-line-" + lineNum;
-        // Increase lineNum based on number of newline characters in diff text
-        lineNum += (diff[1].match(/\n/g) || []).length;
-        diffView.appendChild(span);
-      });
-      createChangeListFromDiff(diffs);
-    }
-    function createChangeListFromDiff(diffs) {
-      const changeListDiv = document.getElementById("change-list");
-      changeListDiv.innerHTML = "";
-      let lineNum = 1;
-      diffs.forEach((diff, index) => {
-        if (diff[0] !== 0) {
-          const item = document.createElement("div");
-          item.className = "change-item";
-          item.textContent = "Line " + lineNum + ": " + (diff[0] === 1 ? "Added" : "Removed");
-          item.onclick = () => { scrollToLine(lineNum); };
-          // Add hover preview tooltip
-          item.onmouseover = (e) => showTooltip(e, diff[1]);
-          item.onmouseout = hideTooltip;
-          changeListDiv.appendChild(item);
-        }
-        lineNum += (diff[1].match(/\n/g) || []).length;
-      });
-    }
-    function toggleDiffView(force) {
-      const diffView = document.getElementById("diff-view");
-      if (typeof force === "boolean") {
-        diffView.style.display = force ? "block" : "none";
-      } else {
-        diffView.style.display = diffView.style.display === "block" ? "none" : "block";
-      }
-    }
-    function toggleChangeList(force) {
-      const changeList = document.getElementById("change-list");
-      if (typeof force === "boolean") {
-        changeList.style.display = force ? "block" : "none";
-      } else {
-        changeList.style.display = changeList.style.display === "block" ? "none" : "block";
-      }
-    }
-
-    /* ---------- Tooltip for Change Preview ---------- */
-    function showTooltip(event, text) {
-      const tooltip = document.getElementById("tooltip");
-      tooltip.textContent = text;
-      tooltip.style.display = "block";
-      tooltip.style.top = (event.clientY + 10) + "px";
-      tooltip.style.left = (event.clientX + 10) + "px";
-    }
-    function hideTooltip() {
-      const tooltip = document.getElementById("tooltip");
-      tooltip.style.display = "none";
-    }
-
-    /* ---------- Compare, Patch, and Merge Actions ---------- */
-    function compareScripts() {
-      showDiff();
-      toggleDiffView(true);
-      toggleChangeList(true);
-      saveToHistory();
-    }
-    function applyPatch() {
-      const patchText = document.getElementById("patch").value;
-      document.getElementById("original").value = patchText;
-      document.getElementById("patch").value = "";
-      updateLineNumbers("original");
-      updateLineNumbers("patch");
-      saveToHistory();
-      alert("Patch applied: Original updated with Patch content.");
-    }
-    function mergeScripts() {
-      // Use a basic merge: where patch text differs, use patch line.
-      const origLines = document.getElementById("original").value.split("\n");
-      const patchLines = document.getElementById("patch").value.split("\n");
-      const merged = origLines.map((line, i) => patchLines[i] && patchLines[i] !== line ? patchLines[i] : line).join("\n");
-      document.getElementById("original").value = merged;
-      document.getElementById("patch").value = "";
-      updateLineNumbers("original");
-      updateLineNumbers("patch");
-      saveToHistory();
-      alert("Merge completed: Original merged with Patch.");
-    }
-
-    /* ---------- Project Management (Save/Load Projects) ---------- */
-    function saveProjectToLocalStorage() {
-      const data = {
-        original: document.getElementById("original").value,
-        patch: document.getElementById("patch").value
-      };
-      localStorage.setItem("scriptProject", JSON.stringify(data));
-    }
-    function loadProjectFromLocalStorage() {
+    /* ===== ON LOAD: restore localStorage, init line #, init splitter ===== */
+    window.onload = function () {
+      // Restore from localStorage if available
       const saved = localStorage.getItem("scriptProject");
       if (saved) {
         const { original, patch } = JSON.parse(saved);
         document.getElementById("original").value = original || "";
         document.getElementById("patch").value = patch || "";
       }
-    }
-    function saveProjectAs() {
-      const projectName = document.getElementById("project-name").value.trim();
-      if (!projectName) {
-        alert("Please enter a project name.");
-        return;
-      }
-      const data = {
-        original: document.getElementById("original").value,
-        patch: document.getElementById("patch").value
-      };
-      let projects = JSON.parse(localStorage.getItem("projects") || "{}");
-      projects[projectName] = data;
-      localStorage.setItem("projects", JSON.stringify(projects));
-      alert("Project saved as " + projectName);
-      populateProjectList();
-    }
-    function populateProjectList() {
-      const projectList = document.getElementById("project-list");
-      projectList.innerHTML = '<option value="">-- Select Project --</option>';
-      const projects = JSON.parse(localStorage.getItem("projects") || "{}");
-      for (let name in projects) {
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        projectList.appendChild(option);
-      }
-    }
-    function loadProjectByName(name) {
-      if (!name) return;
-      const projects = JSON.parse(localStorage.getItem("projects") || "{}");
-      const data = projects[name];
-      if (data) {
-        document.getElementById("original").value = data.original || "";
-        document.getElementById("patch").value = data.patch || "";
-        updateLineNumbers("original");
-        updateLineNumbers("patch");
-      }
-    }
 
-    /* ---------- Auto-Save Every 10 Seconds ---------- */
-    setInterval(() => {
-      saveProjectToLocalStorage();
-    }, 10000);
-
-    /* ---------- Splitter Functionality ---------- */
-    function initSplitter() {
-      splitter = document.querySelector(".splitter");
-      splitter.addEventListener("mousedown", startResize);
-      splitter.addEventListener("touchstart", startResize, { passive: false });
-    }
-    function startResize(e) {
-      e.preventDefault();
-      isResizing = true;
-      startY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
-      const topPanel = document.getElementById("original-container");
-      const bottomPanel = document.getElementById("patch-container");
-      startHeightTop = topPanel.offsetHeight;
-      startHeightBottom = bottomPanel.offsetHeight;
-      window.addEventListener("mousemove", resizePanels);
-      window.addEventListener("mouseup", stopResize);
-      window.addEventListener("touchmove", resizePanels, { passive: false });
-      window.addEventListener("touchend", stopResize);
-    }
-    function resizePanels(e) {
-      if (!isResizing) return;
-      e.preventDefault();
-      const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
-      const deltaY = clientY - startY;
-      const topPanel = document.getElementById("original-container");
-      const bottomPanel = document.getElementById("patch-container");
-      const totalHeight = topPanel.offsetHeight + bottomPanel.offsetHeight;
-      let newTopHeight = Math.max(100, Math.min(startHeightTop + deltaY, totalHeight - 100));
-      let newBottomHeight = totalHeight - newTopHeight;
-      topPanel.style.flex = `0 0 ${newTopHeight}px`;
-      bottomPanel.style.flex = `0 0 ${newBottomHeight}px`;
-    }
-    function stopResize(e) {
-      e.preventDefault();
-      isResizing = false;
-      window.removeEventListener("mousemove", resizePanels);
-      window.removeEventListener("mouseup", stopResize);
-      window.removeEventListener("touchmove", resizePanels);
-      window.removeEventListener("touchend", stopResize);
-    }
-
-    /* ---------- Paste-Friendly Fix ---------- */
-    function handlePaste(id) {
-      setTimeout(() => {
-        updateLineNumbers(id);
-      }, 50);
-    }
-
-    /* ---------- Initialization ---------- */
-    window.onload = function() {
-      loadProjectFromLocalStorage();
+      // For both textareas, watch for input/scroll/paste
       ["original", "patch"].forEach((id) => {
         const ta = document.getElementById(id);
         ta.addEventListener("input", () => updateLineNumbers(id));
@@ -792,13 +552,154 @@
         ta.addEventListener("paste", () => handlePaste(id));
         updateLineNumbers(id);
       });
+
       initSplitter();
-      populateProjectList();
     };
 
     window.onbeforeunload = function() {
-      saveProjectToLocalStorage();
+      // Auto-save on unload
+      saveProject();
     };
+
+    /* ====== NEW: PREVIEW MERGE/PATCH LOGIC (line-based diff) ====== */
+    function lineDiff(orig, patch) {
+      const origLines = orig.split("\n");
+      const patchLines = patch.split("\n");
+      let diff = [];
+      let i = 0, j = 0;
+      while (i < origLines.length && j < patchLines.length) {
+        if (origLines[i] === patchLines[j]) {
+          diff.push({ text: origLines[i], line: i+1, equal: true });
+          i++; j++;
+        } else {
+          diff.push({ text: origLines[i], line: i+1, removed: true });
+          diff.push({ text: patchLines[j], line: i+1, added: true });
+          i++; j++;
+        }
+      }
+      while (i < origLines.length) {
+        diff.push({ text: origLines[i], line: i+1, removed: true });
+        i++;
+      }
+      while (j < patchLines.length) {
+        diff.push({ text: patchLines[j], line: origLines.length + j + 1, added: true });
+        j++;
+      }
+      return diff;
+    }
+
+    function showDiffAndScroll(origText, patchText) {
+      const diff = lineDiff(origText, patchText);
+      const diffView = document.getElementById("diff-view");
+      const changeList = document.getElementById("change-list");
+      diffView.innerHTML = "";
+      changeList.innerHTML = "";
+
+      let firstDiffLine = null;
+      diff.forEach((d) => {
+        // Add line to diff view
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "diff-line";
+        if (d.added) {
+          lineDiv.classList.add("added");
+          lineDiv.textContent = "+ " + d.text;
+        } else if (d.removed) {
+          lineDiv.classList.add("removed");
+          lineDiv.textContent = "- " + d.text;
+        } else {
+          lineDiv.textContent = "  " + d.text;
+        }
+        diffView.appendChild(lineDiv);
+
+        // Add item to change list if changed
+        if (d.added || d.removed) {
+          if (firstDiffLine === null) firstDiffLine = d.line;
+          const item = document.createElement("div");
+          item.className = "change-item";
+          item.textContent = `Line ${d.line}: ${d.added ? "Added" : "Removed"}`;
+          item.onclick = () => scrollOriginalToLine(d.line);
+          changeList.appendChild(item);
+        }
+      });
+
+      // Show overlays
+      diffView.style.display = "block";
+      changeList.style.display = "block";
+
+      // Scroll Original to first difference
+      if (firstDiffLine) scrollOriginalToLine(firstDiffLine);
+    }
+
+    function scrollOriginalToLine(lineNum) {
+      const ta = document.getElementById("original");
+      // ~21px per line
+      ta.scrollTo({
+        top: (lineNum - 1) * 21,
+        behavior: "smooth"
+      });
+    }
+
+    function hideDiffView() {
+      document.getElementById("diff-view").style.display = "none";
+      document.getElementById("change-list").style.display = "none";
+    }
+
+    // Actual preview logic
+    function previewMerge() {
+      const origText = document.getElementById("original").value;
+      const patchText = document.getElementById("patch").value;
+      if (!patchText) {
+        alert("No patch content to merge!");
+        return;
+      }
+      // 1) Show diffs, scroll to first difference
+      showDiffAndScroll(origText, patchText);
+      // 2) Ask user if they want to proceed
+      setTimeout(() => {
+        if (confirm("Merge these changes into Original?")) {
+          doMerge(); // call the real merge
+          hideDiffView();
+        }
+      }, 300);
+    }
+    function doMerge() {
+      const origLines = document.getElementById("original").value.split("\n");
+      const patchLines = document.getElementById("patch").value.split("\n");
+      const merged = origLines.map((line, i) => patchLines[i] || line).join("\n");
+      document.getElementById("original").value = merged;
+      document.getElementById("patch").value = "";
+      updateLineNumbers("original");
+      updateLineNumbers("patch");
+      saveToHistory();
+      alert("Merge completed (after preview)!");
+    }
+
+    function previewPatch() {
+      const origText = document.getElementById("original").value;
+      const patchText = document.getElementById("patch").value;
+      if (!patchText) {
+        alert("No patch content to apply!");
+        return;
+      }
+      // 1) Show diffs
+      showDiffAndScroll(origText, patchText);
+      // 2) Ask user to confirm
+      setTimeout(() => {
+        if (confirm("Replace Original with Patch?")) {
+          doPatch();
+          hideDiffView();
+        }
+      }, 300);
+    }
+    function doPatch() {
+      const patchText = document.getElementById("patch").value;
+      document.getElementById("original").value = patchText;
+      document.getElementById("patch").value = "";
+      updateLineNumbers("original");
+      updateLineNumbers("patch");
+      saveToHistory();
+      alert("Patch applied (after preview)!");
+    }
   </script>
 </body>
 </html>
